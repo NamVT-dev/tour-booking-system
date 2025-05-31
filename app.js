@@ -7,7 +7,8 @@ const cookieParser = require("cookie-parser");
 const xss = require("xss-clean");
 const mongoSanitize = require("express-mongo-sanitize");
 const compression = require("compression");
-
+const authRoutes = require("./routes/authRoute");
+const tourRoute = require("./routes/tourRoute");
 const AppError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
 
@@ -44,6 +45,8 @@ app.use(xss());
 app.use(compression());
 
 // app.use(registedRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/auth/tour", tourRoute);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));

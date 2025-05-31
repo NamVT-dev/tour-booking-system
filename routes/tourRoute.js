@@ -8,4 +8,11 @@ router.post(
   authController.restrictTo("partner"),
   tourController.createTour
 );
+router.get("/", authController.protect, tourController.getAllTours);
+router.patch(
+  "/:id",
+  authController.protect,
+  authController.restrictTo("partner"),
+  tourController.updateTour
+);
 module.exports = router;
