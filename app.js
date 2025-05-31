@@ -10,7 +10,6 @@ const compression = require("compression");
 
 const AppError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
-const registedRoutes = require("./routes/index");
 
 //Start app express
 const app = express();
