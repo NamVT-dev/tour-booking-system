@@ -53,7 +53,7 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
   description: {
-    type :String,
+    type: String,
   },
 });
 

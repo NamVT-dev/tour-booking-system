@@ -104,9 +104,9 @@ const tourSchema = new mongoose.Schema(
       default: "pending",
     },
     partner: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'User',
-        required: [true, 'Tour must belong to a partner']
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+      required: [true, "Tour must belong to a partner"],
     },
   },
   {

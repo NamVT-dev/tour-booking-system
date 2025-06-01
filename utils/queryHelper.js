@@ -1,17 +1,17 @@
-exports.buildPaginatedQuery = ({ 
-    query, 
-    filters = {},
-    searchFields = [],
-    page = 1, 
-    limit = 10, 
-    select = "", 
-    sort = "-createdAt" 
-    }) => {
+exports.buildPaginatedQuery = ({
+  query,
+  filters = {},
+  searchFields = [],
+  page = 1,
+  limit = 10,
+  select = "",
+  sort = "-createdAt",
+}) => {
   const finalQuery = { ...filters };
 
   if (query.search && searchFields.length > 0) {
-    finalQuery.$or = searchFields.map(field => ({
-      [field]: { $regex: query.search, $options: "i" }
+    finalQuery.$or = searchFields.map((field) => ({
+      [field]: { $regex: query.search, $options: "i" },
     }));
   }
 
@@ -24,6 +24,6 @@ exports.buildPaginatedQuery = ({
       limit: Number(limit),
       select,
       sort,
-    }
+    },
   };
 };

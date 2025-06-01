@@ -1,8 +1,8 @@
 exports.generateRandomPassword = (length = 12) => {
-  const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
-  const NUMBERS = '0123456789';
-  const SYMBOLS = '!@#$%^&*';
+  const UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
+  const NUMBERS = "0123456789";
+  const SYMBOLS = "!@#$%^&*";
   const ALL_CHARS = UPPERCASE + LOWERCASE + NUMBERS + SYMBOLS;
 
   const getRandomChar = (chars) =>
@@ -27,5 +27,5 @@ exports.generateRandomPassword = (length = 12) => {
     [passwordChars[i], passwordChars[j]] = [passwordChars[j], passwordChars[i]];
   }
 
-  return passwordChars.join('');
+  return passwordChars.join("");
 };
