@@ -19,7 +19,7 @@ const createSendToken = (user, statusCode, req, res) => {
     ),
     httpOnly: true,
     secure: req.secure || req.headers["x-forwarded-proto"] === "https",
-    sameSite: "None",
+    sameSite: "Lax",
   });
 
   // Remove password from output
@@ -137,4 +137,15 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   createSendToken(user, 200, req, res);
+});
+
+exports.getProfile = catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      data: user,
+    },
+  });
 });
