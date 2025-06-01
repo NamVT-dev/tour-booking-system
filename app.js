@@ -10,7 +10,6 @@ const compression = require("compression");
 const tourRouter = require("./routes/tourRoutes");
 const AppError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
-const registedRoutes = require("./routes/index");
 
 //Start app express
 const app = express();
@@ -42,6 +41,9 @@ app.use(mongoSanitize());
 app.use(xss());
 
 app.use(compression());
+
+// Mount the tour router
+app.use("/api/v1/tours", tourRouter);
 
 // app.use(registedRoutes);
 
