@@ -49,13 +49,13 @@ exports.login = catchAsync(async (req, res, next) => {
 
   // 1) Check if email and password exist
   if (!email || !password) {
-    return next(new AppError("Please provide email and password!", 400));
+    return next(new AppError("Hãy nhập tài khoản và mật khẩu!", 400));
   }
   // 2) Check if user exists && password is correct
   const user = await User.findOne({ email }).select("+password");
 
   if (!user || !(await user.correctPassword(password, user.password))) {
-    return next(new AppError("Incorrect email or password", 401));
+    return next(new AppError("Tài khoản hoặc mật khẩu không đúng", 401));
   }
 
   // 3) If everything ok, send token to client
@@ -83,9 +83,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   }
 
   if (!token) {
-    return next(
-      new AppError("You are not logged in! Please log in to get access.", 401)
-    );
+    return next(new AppError("Xin hãy đăng nhập để thực hiện hành động.", 401));
   }
 
   // 2) Verification token
@@ -94,18 +92,16 @@ exports.protect = catchAsync(async (req, res, next) => {
   // 3) Check if user still exists
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
-    return next(
-      new AppError(
-        "The user belonging to this token does no longer exist.",
-        401
-      )
-    );
+    return next(new AppError("Không tìm thấy người dùng.", 401));
   }
 
   // 4) Check if user changed password after the token was issued
   if (currentUser.changedPasswordAfter(decoded.iat)) {
     return next(
-      new AppError("User recently changed password! Please log in again.", 401)
+      new AppError(
+        "Người dùng mới đổi mật khẩu gần đây! Hãy đăng nhập lại.",
+        401
+      )
     );
   }
 
@@ -120,7 +116,7 @@ exports.restrictTo = (...roles) => {
     // roles ['admin', 'lead-guide']. role='user'
     if (!roles.includes(req.user.role)) {
       return next(
-        new AppError("You do not have permission to perform this action", 403)
+        new AppError("Bạn không có quyền thực hiện hành động này", 403)
       );
     }
 
@@ -132,7 +128,7 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user.id).select("+password");
 
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
-    return next(new AppError("Your current password is wrong.", 401));
+    return next(new AppError("Mật khẩu hiện tại không đúng.", 401));
   }
 
   user.password = req.body.password;
