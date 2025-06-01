@@ -18,7 +18,8 @@ const app = express();
 //Implament cors
 app.use(
   cors({
-    origin: "*",
+    origin: process.env.FRONT_END_URI || "*",
+    credentials: true,
   })
 );
 
@@ -44,7 +45,7 @@ app.use(xss());
 
 app.use(compression());
 
-// app.use(registedRoutes);
+app.use(registedRoutes);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
