@@ -7,7 +7,7 @@ const cookieParser = require("cookie-parser");
 const xss = require("xss-clean");
 const mongoSanitize = require("express-mongo-sanitize");
 const compression = require("compression");
-
+const tourRouter = require("./routes/tourRoutes");
 const AppError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
 const registedRoutes = require("./routes/index");
@@ -21,7 +21,6 @@ app.use(
     origin: "*",
   })
 );
-
 // Serving static files
 app.use(express.static(path.join(__dirname, "public")));
 
