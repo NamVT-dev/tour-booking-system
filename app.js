@@ -7,10 +7,9 @@ const cookieParser = require("cookie-parser");
 const xss = require("xss-clean");
 const mongoSanitize = require("express-mongo-sanitize");
 const compression = require("compression");
-
 const AppError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
-const registedRoutes = require("./routes/index");
+const registedRoutes = require("./routes");
 
 //Start app express
 const app = express();
@@ -22,7 +21,6 @@ app.use(
     credentials: true,
   })
 );
-
 // Serving static files
 app.use(express.static(path.join(__dirname, "public")));
 
