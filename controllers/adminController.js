@@ -8,7 +8,7 @@ const getAllUserForAdmin = catchAsync(async (req,res,next) => {
 
    
         const {role ,status, page=1, limit=10}  = req.query;
-        const filters = { role: { $ne: 'admin' }};
+        const filters = { role: { $ne: 'admin' } ,active: true};
 
         if (role && role !== 'admin') {
             filters.role = role;
@@ -106,11 +106,11 @@ const createPartnerAccount = catchAsync(async (req, res, next) =>{
 });
 
 const getPendingTours = catchAsync(async (req,res) => {
-    const { page = 1, limit  = 10 , search } = req.query;
+    const { page = 1, limit  = 10 , search ,partner} = req.query;
 
     const {finalQuery, paginationOptions} = buildPaginatedQuery({
         query: req.query,
-        filters:{status: 'pending'},
+        filters:{status: 'pending', ...(partner && { partner })},
         searchFields:["name","summary"],
         page,
         limit,
