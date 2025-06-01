@@ -9,9 +9,13 @@ exports.createTour = async (req, res, next) => {
         message: "Only partners can create tours",
       });
     }
-    //New tour
-    const newTour = await Tour.create(req.body);
 
+    const tourData = {
+      ...req.body,
+      partner: req.user._id,
+    };
+
+    const newTour = await Tour.create(tourData);
     res.status(201).json({
       status: "success",
       data: {
@@ -22,41 +26,18 @@ exports.createTour = async (req, res, next) => {
     next(error);
   }
 };
-// GET all tours
-exports.getAllTours = async (req, res, next) => {
+exports.getPartnerTours = async (req, res, next) => {
   try {
-    // Filtering
-    const queryObj = { ...req.query };
-    const excludeFields = ["page", "sort", "limit", "fields"];
-    excludeFields.forEach((el) => delete queryObj[el]);
+    const partnerId = req.user.id;
 
-    // Convert query operators
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    let query = Tour.find({ partner: partnerId });
 
-    let query = Tour.find(JSON.parse(queryStr));
+    query = query.sort("-createdAt");
 
-    // 2. Sorting
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(",").join(" ");
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort("-createdAt"); // default sort
-    }
-
-    // 3. Field limiting
-    if (req.query.fields) {
-      const fields = req.query.fields.split(",").join(" ");
-      query = query.select(fields);
-    } else {
-      query = query.select("-__v");
-    }
-
-    // 4. Pagination
+    // Pagination
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 100;
+    const limit = parseInt(req.query.limit, 10) || 10;
     const skip = (page - 1) * limit;
-
     query = query.skip(skip).limit(limit);
 
     const tours = await query;
@@ -64,29 +45,59 @@ exports.getAllTours = async (req, res, next) => {
     res.status(200).json({
       status: "success",
       results: tours.length,
-      data: {
-        tours,
-      },
+      data: { tours },
     });
   } catch (error) {
     next(error);
   }
 };
+//GET
+exports.getTourById = async (req, res, next) => {
+  try {
+    const tour = await Tour.findById(req.params.id);
+    if (!tour) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "No tour found with that ID" });
+    }
+    res.status(200).json({ status: "success", data: { tour } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+//Patch
 exports.updateTour = async (req, res, next) => {
   try {
     const tourId = req.params.id;
+    const tour = await Tour.findById(tourId);
 
-    const updatedTour = await Tour.findByIdAndUpdate(tourId, req.body, {
-      new: true,
-      runValidators: true, // để validate
-    });
-
-    if (!updatedTour) {
+    if (!tour) {
       return res.status(404).json({
         status: "fail",
         message: "No tour found with that ID",
       });
     }
+    //Check role moi duoc update
+    if (req.user.role === "partner") {
+      if (tour.partner.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          status: "fail",
+          message: "You can only update your own tours",
+        });
+      }
+    } else if (req.user.role !== "admin") {
+      return res.status(403).json({
+        status: "fail",
+        message: "You are not allowed to update this tour",
+      });
+    }
+
+    Object.keys(req.body).forEach((key) => {
+      tour[key] = req.body[key];
+    });
+
+    const updatedTour = await tour.save();
 
     res.status(200).json({
       status: "success",
@@ -94,6 +105,34 @@ exports.updateTour = async (req, res, next) => {
         tour: updatedTour,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+//Delete
+exports.deleteTour = async (req, res, next) => {
+  try {
+    const tour = await Tour.findById(req.params.id);
+
+    if (!tour) {
+      return res
+        .status(404)
+        .json({ status: "fail", message: "Không tìm thấy tour này!" });
+    }
+
+    if (
+      req.user.role === "partner" &&
+      tour.partner.toString() !== req.user._id.toString()
+    ) {
+      return res
+        .status(403)
+        .json({ status: "fail", message: "Bạn chỉ có thể xóa tour của mình!" });
+    }
+
+    await Tour.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ status: "success", message: "Tour đã bị xóa!" });
   } catch (error) {
     next(error);
   }

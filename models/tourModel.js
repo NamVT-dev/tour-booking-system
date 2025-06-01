@@ -22,14 +22,6 @@ const tourSchema = new mongoose.Schema(
       min: [2, "Group size must be bigger than 1"],
       max: [100, "Group size can't be bigger than 100"],
     },
-    difficulty: {
-      type: String,
-      required: [true, "A tour must have a difficulty"],
-      enum: {
-        values: ["easy", "medium", "difficult"],
-        message: "Difficulty is either: easy, medium, difficult",
-      },
-    },
     ratingsAverage: {
       type: Number,
       default: 4.5,
@@ -63,6 +55,11 @@ const tourSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: [true, "A tour must have a description"],
+    },
+    partner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // hoặc "Partner" nếu bạn có collection riêng
+      required: true,
     },
     imageCover: {
       type: String,
