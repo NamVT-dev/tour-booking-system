@@ -186,6 +186,7 @@ exports.getAllTours = async (req, res) => {
     const filterQuery = {
       ...searchConditions,
       ...locationConditions,
+      status: "active",
     };
 
     if (Object.keys(priceConditions).length > 0) {
