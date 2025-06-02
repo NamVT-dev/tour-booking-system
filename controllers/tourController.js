@@ -30,6 +30,7 @@ exports.createTour = async (req, res, next) => {
 exports.getPartnerTours = async (req, res, next) => {
   try {
     const partnerId = req.user.id;
+    console.log(partnerId);
 
     let query = Tour.find({ partner: partnerId });
 
