@@ -43,7 +43,7 @@ app.use(xss());
 app.use(compression());
 
 // Mount the tour router
-app.use("/api/v1/tours", tourRouter);
+app.use("/tours", tourRouter);
 
 // app.use(registedRoutes);
 

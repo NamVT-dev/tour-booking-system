@@ -21,7 +21,6 @@ exports.getAllTours = async (req, res) => {
             { name: { $regex: search, $options: "i" } },
             { summary: { $regex: search, $options: "i" } },
             { description: { $regex: search, $options: "i" } },
-            { difficulty: { $regex: search, $options: "i" } },
           ],
         }
       : {};
@@ -47,6 +46,7 @@ exports.getAllTours = async (req, res) => {
     const filterQuery = {
       ...searchConditions,
       ...locationConditions,
+      status: "active",
     };
 
     if (Object.keys(priceConditions).length > 0) {
