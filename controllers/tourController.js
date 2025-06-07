@@ -1,5 +1,8 @@
 const Tour = require("../models/tourModel");
 const Review = require("../models/reviewModel");
+const catchAsync = require("../utils/catchAsync");
+const AppError = require("../utils/appError");
+
 
 //POST
 exports.createTour = async (req, res, next) => {
@@ -220,17 +223,14 @@ exports.getAllTours = async (req, res) => {
 };
 
 // Get tour by slug
-exports.getTourBySlug = async (req, res) => {
+exports.getTourBySlug = catchAsync(async (req, res, next) => {
   try {
     const { slug } = req.params;
 
     const tour = await Tour.findOne({ slug, status: "active" });
 
     if (!tour) {
-      return res.status(404).json({
-        status: 404,
-        message: "Không tìm thấy tour.",
-      });
+      return next(new AppError("Không tìm thấy tour", 404));
     }
 
     // Tính ratings bằng aggregation
@@ -270,14 +270,12 @@ exports.getTourBySlug = async (req, res) => {
 
     res.status(200).json({
       status: 200,
+      message: "Lấy thông tin tour thành công",
       data: {
         tour: tourResponse,
       },
     });
   } catch (err) {
-    res.status(500).json({
-      status: 500,
-      message: err.message,
-    });
+    return next(new AppError(err.message, 500));
   }
-};
+});
