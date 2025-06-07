@@ -5,10 +5,8 @@ const authController = require("../controllers/authController");
 const router = express.Router();
 
 router.get("/partner", authController.protect, tourController.getPartnerTours);
-router.get("/:id", authController.protect, tourController.getTourById);
-
 router.get("/", tourController.getAllTours);
-
+router.get("/:id", authController.protect, tourController.getTourById);
 router.get("/:slug", tourController.getTourBySlug);
 
 router.use(authController.protect);
