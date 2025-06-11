@@ -1,7 +1,64 @@
+const multer = require("multer");
+const sharp = require("sharp");
+
 const Tour = require("../models/tourModel");
 const Review = require("../models/reviewModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const { uploadToCloudinary } = require("../config/cloudinary");
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    cb(new AppError("Not an image! Please upload only images.", 400), false);
+  }
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+exports.uploadTourImages = upload.fields([
+  { name: "imageCover", maxCount: 1 },
+  { name: "images", maxCount: 5 },
+]);
+
+exports.resizeTourImages = catchAsync(async (req, res, next) => {
+  if (!req.files?.imageCover || !req.files?.images) return next();
+  // 1) Cover image
+  const coverFilename = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
+  const buffer = await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333)
+    .toFormat("jpeg")
+    .jpeg({ quality: 90 })
+    .toBuffer();
+
+  const uploadCover = await uploadToCloudinary("tours", buffer, coverFilename);
+  req.body.imageCover = uploadCover.secure_url;
+  // 2) Images
+  req.body.images = [];
+
+  await Promise.all(
+    req.files.images.map(async (file, i) => {
+      const filename = `tour-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+
+      const buffer = await sharp(file.buffer)
+        .resize(2000, 1333)
+        .toFormat("jpeg")
+        .jpeg({ quality: 90 })
+        .toBuffer(); // Chuyển thành buffer
+
+      const uploadedImage = await uploadToCloudinary("tours", buffer, filename);
+      req.body.images.push(uploadedImage.secure_url); // Lưu URL ảnh
+    })
+  );
+
+  next();
+});
 
 //POST
 exports.createTour = async (req, res, next) => {

@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("./../models/userModel");
 const catchAsync = require("./../utils/catchAsync");
 const AppError = require("./../utils/appError");
+const Email = require("../utils/email");
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -34,7 +35,7 @@ const createSendToken = (user, statusCode, req, res) => {
   });
 };
 
-exports.signup = catchAsync(async (req, res) => {
+exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
     name: req.body.name,
     email: req.body.email,
@@ -42,7 +43,19 @@ exports.signup = catchAsync(async (req, res) => {
     passwordConfirm: req.body.passwordConfirm,
   });
 
-  createSendToken(newUser, 201, req, res);
+  const confirmPin = newUser.createConfirmPin();
+
+  await newUser.save({ validateBeforeSave: false });
+
+  try {
+    await new Email(newUser, { pin: confirmPin }).sendConfirmEmail();
+    createSendToken(newUser, 201, req, res);
+    /*eslint-disable-next-line*/
+  } catch (err) {
+    newUser.confirmPin = undefined;
+    await newUser.save({ validateBeforeSave: false });
+    return next(new AppError("Có lỗi khi gửi email. Hãy thử lại sau!"), 500);
+  }
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -104,6 +117,10 @@ exports.protect = catchAsync(async (req, res, next) => {
         401
       )
     );
+  }
+
+  if (!currentUser.active) {
+    return next(new AppError("Tài khoản chưa được xác nhận", 401));
   }
 
   // GRANT ACCESS TO PROTECTED ROUTE
