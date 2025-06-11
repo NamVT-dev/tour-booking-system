@@ -7,10 +7,9 @@ const cookieParser = require("cookie-parser");
 const xss = require("xss-clean");
 const mongoSanitize = require("express-mongo-sanitize");
 const compression = require("compression");
-
 const AppError = require("./utils/appError");
 const globalErrorHandler = require("./controllers/errorController");
-const registedRoutes = require("./routes/index");
+const registedRoutes = require("./routes");
 
 //Start app express
 const app = express();
@@ -18,10 +17,10 @@ const app = express();
 //Implament cors
 app.use(
   cors({
-    origin: "*",
+    origin: process.env.FRONT_END_URI || "*",
+    credentials: true,
   })
 );
-
 // Serving static files
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -44,7 +43,7 @@ app.use(xss());
 
 app.use(compression());
 
-// app.use(registedRoutes);
+app.use(registedRoutes);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
