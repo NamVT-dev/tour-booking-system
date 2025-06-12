@@ -1,9 +1,7 @@
 const catchAsync = require("../utils/catchAsync");
 const Tour = require("../models/tourModel");
 const Review = require("../models/reviewModel");
-const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-
 
 //POST
 exports.createTour = async (req, res, next) => {
@@ -144,19 +142,7 @@ exports.deleteTour = async (req, res, next) => {
   }
 };
 
-exports.getAllTours = async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      sort = "-createdAt",
-      search = "",
-      minPrice,
-      maxPrice,
-      location,
-    } = req.query;
-// eslint-disable-next-line no-unused-vars
-const getAllTours = catchAsync(async (req, res, next) => {
+const getAllTours = catchAsync(async (req, res) => {
   const {
     page = 1,
     limit = 10,
@@ -197,12 +183,6 @@ const getAllTours = catchAsync(async (req, res, next) => {
       }
     : {};
 
-    // Tổng hợp tất cả điều kiện
-    const filterQuery = {
-      ...searchConditions,
-      ...locationConditions,
-      status: "active",
-    };
   // Tổng hợp điều kiện
   const filterQuery = {
     ...searchConditions,
@@ -239,58 +219,54 @@ module.exports = {
 
 // Get tour by slug
 exports.getTourBySlug = catchAsync(async (req, res, next) => {
-  try {
-    const { slug } = req.params;
+  const { slug } = req.params;
 
-    const tour = await Tour.findOne({ slug, status: "active" });
+  const tour = await Tour.findOne({ slug, status: "active" });
 
-    if (!tour) {
-      return next(new AppError("Không tìm thấy tour", 404));
-    }
-
-    // Tính ratings bằng aggregation
-    const ratingsData = await Review.aggregate([
-      { $match: { tour: tour._id } },
-      {
-        $group: {
-          _id: "$tour",
-          avgRating: { $avg: "$rating" },
-          numRatings: { $sum: 1 },
-        },
-      },
-    ]);
-
-    const avgRating = ratingsData[0]?.avgRating || 0;
-    const numRatings = ratingsData[0]?.numRatings || 0;
-
-    const tourResponse = {
-      name: tour.name,
-      duration: tour.duration,
-      maxGroupSize: tour.maxGroupSize,
-      rating: Math.round(avgRating * 10) / 10,
-      reviews: numRatings,
-      price: tour.price,
-      summary: tour.summary,
-      description: tour.description,
-      imageCover: tour.imageCover,
-      images: tour.images,
-      locations: tour.locations.map((loc) => ({
-        type: loc.type,
-        coordinates: loc.coordinates,
-        address: loc.address,
-        description: loc.description,
-        day: loc.day,
-      })),
-    };
-
-    res.status(200).json({
-      status: 200,
-      message: "Lấy thông tin tour thành công",
-      data: {
-        tour: tourResponse,
-      },
-    });
-  } catch (err) {
-    return next(new AppError(err.message, 500));
+  if (!tour) {
+    return next(new AppError("Không tìm thấy tour", 404));
   }
+
+  // Tính ratings bằng aggregation
+  const ratingsData = await Review.aggregate([
+    { $match: { tour: tour._id } },
+    {
+      $group: {
+        _id: "$tour",
+        avgRating: { $avg: "$rating" },
+        numRatings: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const avgRating = ratingsData[0]?.avgRating || 0;
+  const numRatings = ratingsData[0]?.numRatings || 0;
+
+  const tourResponse = {
+    name: tour.name,
+    duration: tour.duration,
+    maxGroupSize: tour.maxGroupSize,
+    rating: Math.round(avgRating * 10) / 10,
+    reviews: numRatings,
+    price: tour.price,
+    summary: tour.summary,
+    description: tour.description,
+    imageCover: tour.imageCover,
+    images: tour.images,
+    locations: tour.locations.map((loc) => ({
+      type: loc.type,
+      coordinates: loc.coordinates,
+      address: loc.address,
+      description: loc.description,
+      day: loc.day,
+    })),
+  };
+
+  res.status(200).json({
+    status: 200,
+    message: "Lấy thông tin tour thành công",
+    data: {
+      tour: tourResponse,
+    },
+  });
 });
