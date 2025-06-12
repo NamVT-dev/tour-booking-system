@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
+const crypto = require("node:crypto");
+const { generateRandomPin } = require("../utils/passwordUtils");
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -27,7 +29,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, "Xin hãy đặt mật khẩu"],
-    minlength: 8,
+    minlength: [8, "Mật khẩu phải chứa ít nhất 8 ký tự"],
     validate: [
       validator.isStrongPassword,
       "Mật khẩu phải chứa ít nhất 8 ký tự, bao gồm ký tự đặc biệt, chữ in hoa và số",
@@ -47,10 +49,10 @@ const userSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
+  confirmPin: String,
   active: {
     type: Boolean,
-    default: true,
-    select: false,
+    default: false,
   },
   description: {
     type: String,
@@ -73,11 +75,6 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-userSchema.pre(/^find/, function (next) {
-  this.find({ active: { $ne: false } });
-  next();
-});
-
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword
@@ -97,6 +94,16 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
 
   // False means NOT changed
   return false;
+};
+
+userSchema.methods.createConfirmPin = function () {
+  const confirmPin = generateRandomPin(6);
+  this.confirmPin = crypto
+    .createHash("sha256")
+    .update(confirmPin)
+    .digest("hex");
+
+  return confirmPin;
 };
 
 const User = mongoose.model("User", userSchema, "users");
