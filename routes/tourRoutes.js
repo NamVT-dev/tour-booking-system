@@ -9,7 +9,7 @@ router.get("/:id", authController.protect, tourController.getTourById);
 
 router.get("/", tourController.getAllTours);
 
-router.get("/:slug", tourController.getTourBySlug);
+router.get("/slug/:slug", tourController.getTourBySlug);
 
 router.use(authController.protect);
 router.use(authController.restrictTo("partner"));
