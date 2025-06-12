@@ -13,7 +13,7 @@ const tourSchema = new mongoose.Schema(
     },
     slug: String,
     duration: {
-      type: Number,
+      type: String,
       required: [true, "Một chuyến tham quan phải có thời gian"],
     },
     maxGroupSize: {
