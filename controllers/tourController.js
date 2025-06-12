@@ -142,7 +142,7 @@ exports.deleteTour = async (req, res, next) => {
   }
 };
 
-const getAllTours = catchAsync(async (req, res) => {
+exports.getAllTours = catchAsync(async (req, res) => {
   const {
     page = 1,
     limit = 10,
@@ -212,10 +212,6 @@ const getAllTours = catchAsync(async (req, res) => {
     },
   });
 });
-
-module.exports = {
-  getAllTours,
-};
 
 // Get tour by slug
 exports.getTourBySlug = catchAsync(async (req, res, next) => {
