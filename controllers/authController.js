@@ -140,12 +140,68 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 });
 
 exports.getProfile = catchAsync(async (req, res) => {
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id).lean();
+
+  if (!user) {
+    return res.status(404).json({
+      status: "fail",
+      message: "Không tìm thấy người dùng",
+    });
+  }
+
+  if (!user.companyLocation) {
+    user.companyLocation = { address: "" };
+  }
 
   res.status(200).json({
     status: "success",
     data: {
-      data: user,
+      user,
     },
   });
+});
+
+exports.updateUser = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const {
+    name,
+    email,
+    photo,
+    companyName,
+    companyDescription,
+    companyLocation,
+    contactEmail,
+    contactPhone,
+    website,
+    logo,
+  } = req.body;
+
+  let updateFields = {};
+
+  if (req.user.role === "customer") {
+    updateFields = { name, email, photo };
+  } else if (req.user.role === "partner") {
+    updateFields = {
+      companyName,
+      companyDescription,
+      companyLocation,
+      contactEmail,
+      contactPhone,
+      website,
+      logo,
+    };
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!updatedUser) {
+    return res
+      .status(404)
+      .json({ status: "fail", message: "Không tìm thấy user!" });
+  }
+
+  res.status(200).json({ status: "success", data: { user: updatedUser } });
 });

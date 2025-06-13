@@ -55,6 +55,16 @@ const userSchema = new mongoose.Schema({
   description: {
     type: String,
   },
+  // Thông tin công ty ( nếu role === "partner")
+  companyName: String,
+  companyDescription: String,
+  companyLocation: {
+    address: String,
+  },
+  contactEmail: String,
+  contactPhone: String,
+  website: String,
+  logo: String,
 });
 
 userSchema.pre("save", async function (next) {
