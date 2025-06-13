@@ -182,7 +182,8 @@ exports.confirmEmail = catchAsync(async (req, res, next) => {
 
   user.save({ validateBeforeSave: false });
 
-  await new Email(user).sendWelcome();
+  const url = `${process.env.FRONT_END_URI}/profile`;
+  await new Email(user, { url }).sendWelcome();
 
   res.status(200).json({
     status: "success",
