@@ -84,6 +84,11 @@ exports.logout = (req, res) => {
   res.status(200).json({ status: "success" });
 };
 
+exports.bypassInactiveProtect = (req, res, next) => {
+  req.allowedRoute = true;
+  next();
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Getting token and check of it's there
   let token;
@@ -119,7 +124,7 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
   }
 
-  if (!currentUser.active) {
+  if (!currentUser.active && !req.allowedRoute) {
     return next(new AppError("Tài khoản chưa được xác nhận", 401));
   }
 
@@ -165,4 +170,48 @@ exports.getProfile = catchAsync(async (req, res) => {
       data: user,
     },
   });
+});
+
+exports.confirmEmail = catchAsync(async (req, res, next) => {
+  const { pin } = req.params;
+
+  const user = await User.findById(req.user.id);
+
+  if (!user.confirmEmail(pin))
+    return next(new AppError("Mã PIN không hợp lệ!", 400));
+
+  user.save({ validateBeforeSave: false });
+
+  await new Email(user).sendWelcome();
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      data: user,
+    },
+  });
+});
+
+exports.resendConfirmEmail = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+
+  if (user.active)
+    return next(new AppError("Tài khoản đã được xác nhận!", 400));
+
+  const confirmPin = user.createConfirmPin();
+
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    await new Email(user, { pin: confirmPin }).sendConfirmEmail();
+    res.status(200).json({
+      status: "success",
+      message: "Mail xác nhận đã gửi lại thành công!",
+    });
+    /*eslint-disable-next-line*/
+  } catch (err) {
+    user.confirmPin = undefined;
+    await user.save({ validateBeforeSave: false });
+    return next(new AppError("Có lỗi khi gửi email. Hãy thử lại sau!"), 500);
+  }
 });

@@ -12,6 +12,25 @@ router.patch(
   authController.updatePassword
 );
 
-router.get("/profile", authController.protect, authController.getProfile);
+router.get(
+  "/profile",
+  authController.bypassInactiveProtect,
+  authController.protect,
+  authController.getProfile
+);
+
+router.get(
+  "/confirmEmail/:pin",
+  authController.bypassInactiveProtect,
+  authController.protect,
+  authController.confirmEmail
+);
+
+router.get(
+  "/resendConfirmEmail",
+  authController.bypassInactiveProtect,
+  authController.protect,
+  authController.resendConfirmEmail
+);
 
 module.exports = router;
