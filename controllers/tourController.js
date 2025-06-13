@@ -103,6 +103,8 @@ exports.getPartnerTours = async (req, res, next) => {
 
     const tours = await query;
 
+    console.log(tours);
+
     res.status(200).json({
       status: "success",
       results: tours.length,
@@ -198,6 +200,32 @@ exports.deleteTour = async (req, res, next) => {
     next(error);
   }
 };
+
+// Update tour status by partner if it is active
+exports.updateTourStatusByPartner = catchAsync(async (req, res, next) => {
+  const tourId = req.params.tourId;
+  const tour = await Tour.findById(tourId);
+  if (!tour) {
+    return next(new AppError("Không tìm thấy tour với ID này", 404));
+  }
+
+  // Check if user is partner and owns the tour
+  if (tour.partner.toString() !== req.user._id.toString()) {
+    return next(new AppError("Bạn không có quyền cập nhật tour này", 403));
+  }
+
+  // Check tour status
+  if (tour.status === "active") {
+    tour.status = "inactive";
+    await tour.save();
+    res.status(200).json({
+      status: "success",
+      message: "Tour đã được cập nhật thành không hoạt động",
+    });
+  } else {
+    return next(new AppError("Tour đã ở trạng thái không hoạt động", 400));
+  }
+});
 
 exports.getAllTours = async (req, res) => {
   try {
