@@ -29,3 +29,8 @@ exports.generateRandomPassword = (length = 12) => {
 
   return passwordChars.join("");
 };
+
+exports.generateRandomPin = (length = 6) =>
+  Math.floor(
+    10 ** (length - 1) + Math.random() * 9 * 10 ** (length - 1)
+  ).toString();

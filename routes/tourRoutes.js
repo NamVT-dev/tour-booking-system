@@ -9,13 +9,29 @@ router.get("/:id", authController.protect, tourController.getTourById);
 
 router.get("/", tourController.getAllTours);
 
-router.get("/slug/:slug", tourController.getTourBySlug);
+
+router.get("/detail/:slug", tourController.getTourBySlug);
 
 router.use(authController.protect);
 router.use(authController.restrictTo("partner"));
 
-router.post("/create", tourController.createTour);
-router.patch("/:id", tourController.updateTour);
+router.post(
+  "/create",
+  tourController.uploadTourImages,
+  tourController.resizeTourImages,
+  tourController.createTour
+);
+router.post(
+  "/partner/update-status/:tourId",
+  authController.protect,
+  tourController.updateTourStatusByPartner
+);
+router.patch(
+  "/:id",
+  tourController.uploadTourImages,
+  tourController.resizeTourImages,
+  tourController.updateTour
+);
 router.delete("/:id", tourController.deleteTour);
 
 module.exports = router;
