@@ -158,7 +158,6 @@ const approveTour = catchAsync(async (req, res, next) => {
     data: { updatedTour },
   });
 });
-
 module.exports = {
   getAllUserForAdmin,
   createPartnerAccount,
