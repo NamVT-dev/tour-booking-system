@@ -60,4 +60,11 @@ module.exports = class Email {
       `${this.firstName}, mã pin của bạn là ${this.data?.pin}, vui lòng xác nhận địa chỉ email của bạn`
     );
   }
+
+  async sendPasswordReset() {
+    await this.send(
+      "passwordReset",
+      "Cài lại mật khẩu trên Fvivu (khả dụng trong 10p)"
+    );
+  }
 };
