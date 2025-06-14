@@ -14,3 +14,5 @@ router.get("/overview", getPartnerOverview);
 router.get("/analytics", getPartnerAnalytics);
 router.get("/top-revenue-tours", getTopRevenueTours);
 router.get("/booking-details", getBookingDetails);
+
+module.exports = router;

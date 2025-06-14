@@ -3,7 +3,6 @@ const Tour = require("../models/tourModel");
 const catchAsync = require("./../utils/catchAsync");
 const AppError = require("./../utils/appError");
 
-// partner overview in 1 month
 // partner overview in specific month
 exports.getPartnerOverview = catchAsync(async (req, res, next) => {
   const partnerId = req.user.id;
