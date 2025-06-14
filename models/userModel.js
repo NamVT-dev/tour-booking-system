@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const crypto = require("node:crypto");
+
 const { generateRandomPin } = require("../utils/passwordUtils");
 
 const userSchema = new mongoose.Schema({
@@ -50,6 +51,7 @@ const userSchema = new mongoose.Schema({
   passwordResetToken: String,
   passwordResetExpires: Date,
   confirmPin: String,
+  confirmPinExpires: Date,
   active: {
     type: Boolean,
     default: false,
@@ -103,7 +105,22 @@ userSchema.methods.createConfirmPin = function () {
     .update(confirmPin)
     .digest("hex");
 
+  this.confirmPinExpires = Date.now() + 10 * 60 * 1000;
+
   return confirmPin;
+};
+
+userSchema.methods.confirmEmail = function (pin) {
+  const hashedPin = crypto.createHash("sha256").update(pin).digest("hex");
+
+  if (hashedPin !== this.confirmPin || Date.now() > this.confirmPinExpires)
+    return false;
+
+  this.active = true;
+  this.confirmPin = undefined;
+  this.confirmPinExpires = undefined;
+
+  return true;
 };
 
 const User = mongoose.model("User", userSchema, "users");
