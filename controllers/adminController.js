@@ -175,9 +175,39 @@ const approveTour = catchAsync(async (req, res, next) => {
   });
 });
 
+const banUser = catchAsync(async(req,res,next) => {
+  const {userId} = req.params;
+  
+  const user = await User.findById(userId);
+  if(!user) {
+    return next(new AppError("Không tìm thấy người dùng", 404));
+  }
+
+  if(!user.active){
+    return next(new AppError("Người dùng đã bị cấm",400));
+  }
+  if(user.role === "admin") {
+    return next(new AppError("Không thể cấm admin",403));
+  }
+  const bannedUser = await User.findByIdAndUpdate(
+    userId,
+    {active: false},
+    {new: true, runValidators: true}
+  ).select("name email role active")
+
+
+  res.status(200).json({
+    status: "success",
+    message: "Đã cấm người dùng thành công",
+    data: {
+      user: bannedUser
+    }
+  });
+});
 module.exports = {
   getAllUserForAdmin,
   createPartnerAccount,
   approveTour,
   getPendingTours,
+  banUser, 
 };
