@@ -154,18 +154,17 @@ const approveTour = catchAsync(async (req, res, next) => {
     { new: true, runValidators: true }
   );
   //send email to partner
-  if(tour.partner && tour.partner.email){
+  if (tour.partner && tour.partner.email) {
     const data = {
       tourName: tour.name,
       decision: decision,
-    }
+    };
     const email = new Email(tour.partner, data);
     try {
       await email.sendTourApproval();
     } catch (error) {
       return next(new AppError("Có lỗi khi gửi email. Hãy thử lại sau!"), 500);
     }
-    
   }
 
   res.status(200).json({

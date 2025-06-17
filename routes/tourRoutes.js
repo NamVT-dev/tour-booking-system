@@ -9,7 +9,6 @@ router.get("/:id", authController.protect, tourController.getTourById);
 
 router.get("/", tourController.getAllTours);
 
-
 router.get("/detail/:slug", tourController.getTourBySlug);
 
 router.use(authController.protect);
