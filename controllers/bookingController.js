@@ -75,7 +75,6 @@ exports.webhookCheckout = (req, res) => {
 
   res.status(200).json({ received: true });
 };
-
 exports.createBooking = catchAsync(async (req, res, next) => {
   const { tourId, startDate, numberOfPeople } = req.body;
 
