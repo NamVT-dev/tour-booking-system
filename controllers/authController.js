@@ -91,7 +91,6 @@ exports.bypassInactiveProtect = (req, res, next) => {
 };
 
 exports.protect = catchAsync(async (req, res, next) => {
-  console.log("hello");
   // 1) Getting token and check of it's there
   let token;
   if (
