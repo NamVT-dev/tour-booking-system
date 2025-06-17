@@ -1,6 +1,7 @@
 const User = require("../models/userModel");
 const catchAsync = require("./../utils/catchAsync");
 const AppError = require("./../utils/appError");
+const Booking = require("../models/bookingModel")
 
 
 const getNewUsersAndPartners = catchAsync(async (req, res, next) => {
@@ -148,6 +149,120 @@ const getNewUsersAndPartners = catchAsync(async (req, res, next) => {
     });
 });
 
+const getRevenueStats = catchAsync(async (req, res, next) => {
+    const {
+        range = 'day', groupBy = 'day'
+    } = req.query;
+
+    const now = new Date();
+    let fromDate;
+
+    switch (range) {
+        case 'day':
+            fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            break;
+        case 'week':
+            const dayOfWeek = now.getDay();
+            fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1);
+            break;
+        case 'month':
+            fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            break;
+        case 'year':
+            fromDate = new Date(now.getFullYear(), 0, 1);
+            break;
+        default:
+            return next(new AppError('Invalid range parameter', 400));
+    }
+
+    let dateFormat;
+    if (groupBy === 'day') {
+        dateFormat = {
+            year: {
+                $year: '$createdAt'
+            },
+            month: {
+                $month: '$createdAt'
+            },
+            day: {
+                $dayOfMonth: '$createdAt'
+            }
+        };
+    } else if (groupBy === 'week') {
+        dateFormat = {
+            year: {
+                $year: '$createdAt'
+            },
+            week: {
+                $week: '$createdAt'
+            }
+        };
+    } else if (groupBy === 'month') {
+        dateFormat = {
+            year: {
+                $year: '$createdAt'
+            },
+            month: {
+                $month: '$createdAt'
+            }
+        };
+    } else if (groupBy === 'year') {
+        dateFormat = {
+            year: {
+                $year: '$createdAt'
+            }
+        };
+    } else {
+        return next(new AppError('Invalid groupBy parameter', 400));
+    }
+    const stats = await Booking.aggregate([{
+            $match: {
+                createdAt: {
+                    $gte: fromDate,
+                    $lte: now
+                },
+                paid: true
+            }
+        },
+        {
+            $group: {
+                _id: dateFormat,
+                totalRevenue: {
+                    $sum: '$price'
+                },
+                totalBookings: {
+                    $sum: 1
+                },
+                averageBookingValue: {
+                    $avg: '$price'
+                }
+            }
+        },
+        {
+            $sort: {
+                '_id.year': 1,
+                '_id.month': 1,
+                '_id.day': 1,
+                '_id.week': 1
+            }
+        }
+    ]);
+    const totalRevenue = stats.reduce((sum, item) => sum + item.totalRevenue, 0);
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            period: range,
+            groupBy: groupBy,
+            from: fromDate,
+            to: now,
+            stats: stats,
+            totalAllRevenue:totalRevenue
+        }
+    });
+});
+
 module.exports = {
     getNewUsersAndPartners,
+    getRevenueStats
 };
