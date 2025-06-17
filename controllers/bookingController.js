@@ -9,11 +9,15 @@ exports.getCheckoutSession = catchAsync(async (req, res) => {
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
-    success_url: "http://localhost:3000/?success=true",
-    cancel_url: "http://localhost:3000/?success=false",
+    success_url: `${process.env.FRONT_END_URI}/?success=true`,
+    cancel_url: `${process.env.FRONT_END_URI}/?success=false`,
     customer_email: req.user.email,
     client_reference_id: req.body.tourId,
     mode: "payment",
+    metadata: {
+      startDate: req.body.startDate,
+      numberOfPeople: req.body.numberOfPeople.toString(),
+    },
     line_items: [
       {
         price_data: {
@@ -40,7 +44,16 @@ const createBookingCheckout = async (session) => {
   const tour = session.client_reference_id;
   const user = (await User.findOne({ email: session.customer_email })).id;
   const price = session.amount_total;
-  await Booking.create({ tour, user, price });
+  const startDate = session.metadata.startDate;
+  const numberOfPeople = session.metadata.numberOfPeople;
+  await Booking.create({
+    tour,
+    user,
+    price,
+    startDate,
+    numberOfPeople,
+    paid: true,
+  });
 };
 
 exports.webhookCheckout = (req, res) => {
