@@ -61,7 +61,6 @@ module.exports = class Email {
     );
   }
 
-
   async sendTourApproval() {
     const subject =
       this.data?.decision === "active"
