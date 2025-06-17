@@ -154,17 +154,18 @@ const approveTour = catchAsync(async (req, res, next) => {
     { new: true, runValidators: true }
   );
   //send email to partner
-  if (tour.partner && tour.partner.email) {
+  if(tour.partner && tour.partner.email){
     const data = {
       tourName: tour.name,
       decision: decision,
-    };
+    }
     const email = new Email(tour.partner, data);
     try {
       await email.sendTourApproval();
     } catch (error) {
       return next(new AppError("Có lỗi khi gửi email. Hãy thử lại sau!"), 500);
     }
+    
   }
 
   res.status(200).json({
@@ -173,9 +174,40 @@ const approveTour = catchAsync(async (req, res, next) => {
     data: { updatedTour },
   });
 });
+
+const banUser = catchAsync(async(req,res,next) => {
+  const {userId} = req.params;
+  
+  const user = await User.findById(userId);
+  if(!user) {
+    return next(new AppError("Không tìm thấy người dùng", 404));
+  }
+
+  if(!user.active){
+    return next(new AppError("Người dùng đã bị cấm",400));
+  }
+  if(user.role === "admin") {
+    return next(new AppError("Không thể cấm admin",403));
+  }
+  const bannedUser = await User.findByIdAndUpdate(
+    userId,
+    {active: false},
+    {new: true, runValidators: true}
+  ).select("name email role active")
+
+
+  res.status(200).json({
+    status: "success",
+    message: "Đã cấm người dùng thành công",
+    data: {
+      user: bannedUser
+    }
+  });
+});
 module.exports = {
   getAllUserForAdmin,
   createPartnerAccount,
   approveTour,
   getPendingTours,
+  banUser, 
 };
