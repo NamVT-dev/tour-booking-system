@@ -62,12 +62,12 @@ module.exports = class Email {
   }
 
 
-  async sendTourApproval(){
-    const subject = 
+  async sendTourApproval() {
+    const subject =
       this.data?.decision === "active"
-      ?`Tour "${this.data.tourName}" đã được phê duyệt!`
-      :`Tour "${this.data.tourName}" đã bị từ chối!`;
-    await this.send("tourApproval",subject);
+        ? `Tour "${this.data.tourName}" đã được phê duyệt!`
+        : `Tour "${this.data.tourName}" đã bị từ chối!`;
+    await this.send("tourApproval", subject);
   }
   async sendPasswordReset() {
     await this.send(
