@@ -7,8 +7,12 @@ const cookieParser = require("cookie-parser");
 const xss = require("xss-clean");
 const mongoSanitize = require("express-mongo-sanitize");
 const compression = require("compression");
+
 const AppError = require("./utils/appError");
+
 const globalErrorHandler = require("./controllers/errorController");
+const bookingController = require("./controllers/bookingController");
+
 const registedRoutes = require("./routes");
 
 //Start app express
@@ -29,6 +33,13 @@ app.use(helmet());
 
 //Logging
 app.use(morgan("dev"));
+
+//Stripe webhook
+app.post(
+  "/webhook-checkout",
+  express.raw({ type: "application/json" }),
+  bookingController.webhookCheckout
+);
 
 //Body parser
 app.use(express.json({ limit: "10kb" }));
