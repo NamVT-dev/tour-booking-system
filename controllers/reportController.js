@@ -288,26 +288,25 @@ exports.getBookingDetails = catchAsync(async (req, res, next) => {
       select: "name email",
     });
 
-  // Tìm kiếm theo tên tour hoặc người dùng
-  if (search) {
-    const regex = new RegExp(search, "i");
-    query = query.find({
-      $or: [
-        { "tour.name": regex },
-        { "user.name": regex },
-        { "user.email": regex },
-      ],
-    });
-  }
-
   // Tổng số bản ghi (cho phân trang)
   const total = await Booking.countDocuments(filter);
 
   // Lấy dữ liệu có phân trang
-  const bookings = await query
+  let bookings = await query
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(parseInt(limit));
+
+  // Tìm kiếm theo tên tour hoặc người dùng
+  if (search) {
+    const regex = new RegExp(search, "i");
+    bookings = bookings.filter(
+      (b) =>
+        regex.test(b.tour?.name || "") ||
+        regex.test(b.user?.name || "") ||
+        regex.test(b.user?.email || "")
+    );
+  }
 
   // Format kết quả
   const formatted = bookings.map((b) => ({
