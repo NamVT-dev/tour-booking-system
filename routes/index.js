@@ -12,7 +12,6 @@ const route = express.Router();
 route.use("/auth", authRoutes);
 route.use("/admin", adminRoutes);
 route.use("/tours", tourRoutes);
-route.use("/reports", reportRoutes);
 
 route.use("/bookings", bookingRoutes);
 route.use("/reviews", reviewRoutes);
