@@ -4,6 +4,8 @@ const catchAsync = require("./../utils/catchAsync");
 const AppError = require("./../utils/appError");
 const { generateRandomPassword } = require("./../utils/passwordUtils");
 const { buildPaginatedQuery } = require("../utils/queryHelper");
+const Email = require("../utils/email");
+
 const getAllUserForAdmin = catchAsync(async (req, res) => {
   const { role, status, page = 1, limit = 10 } = req.query;
   const filters = { role: { $ne: "admin" }, active: true };
@@ -141,7 +143,7 @@ const approveTour = catchAsync(async (req, res, next) => {
     return next(new AppError('Decision phải là "active" hoặc "inactive"', 400));
   }
 
-  const tour = await Tour.findById(tourId);
+  const tour = await Tour.findById(tourId).populate("partner", "name email");
   if (!tour) return next(new AppError("Không tìm thấy tour", 404));
   if (tour.status !== "pending")
     return next(new AppError("Tour này đã được xử lý", 400));
@@ -151,6 +153,20 @@ const approveTour = catchAsync(async (req, res, next) => {
     { status: decision },
     { new: true, runValidators: true }
   );
+  //send email to partner
+  if(tour.partner && tour.partner.email){
+    const data = {
+      tourName: tour.name,
+      decision: decision,
+    }
+    const email = new Email(tour.partner, data);
+    try {
+      await email.sendTourApproval();
+    } catch (error) {
+      return next(new AppError("Có lỗi khi gửi email. Hãy thử lại sau!"), 500);
+    }
+    
+  }
 
   res.status(200).json({
     status: "success",
@@ -159,9 +175,39 @@ const approveTour = catchAsync(async (req, res, next) => {
   });
 });
 
+const banUser = catchAsync(async(req,res,next) => {
+  const {userId} = req.params;
+  
+  const user = await User.findById(userId);
+  if(!user) {
+    return next(new AppError("Không tìm thấy người dùng", 404));
+  }
+
+  if(!user.active){
+    return next(new AppError("Người dùng đã bị cấm",400));
+  }
+  if(user.role === "admin") {
+    return next(new AppError("Không thể cấm admin",403));
+  }
+  const bannedUser = await User.findByIdAndUpdate(
+    userId,
+    {active: false},
+    {new: true, runValidators: true}
+  ).select("name email role active")
+
+
+  res.status(200).json({
+    status: "success",
+    message: "Đã cấm người dùng thành công",
+    data: {
+      user: bannedUser
+    }
+  });
+});
 module.exports = {
   getAllUserForAdmin,
   createPartnerAccount,
   approveTour,
   getPendingTours,
+  banUser, 
 };

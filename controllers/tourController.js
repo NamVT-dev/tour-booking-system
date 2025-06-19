@@ -263,6 +263,7 @@ exports.getTourBySlug = catchAsync(async (req, res, next) => {
   const numRatings = ratingsData[0]?.numRatings || 0;
 
   const tourResponse = {
+    id: tour._id,
     name: tour.name,
     duration: tour.duration,
     maxGroupSize: tour.maxGroupSize,
@@ -273,6 +274,7 @@ exports.getTourBySlug = catchAsync(async (req, res, next) => {
     description: tour.description,
     imageCover: tour.imageCover,
     images: tour.images,
+    startDates: tour.startDates,
     locations: tour.locations.map((loc) => ({
       type: loc.type,
       coordinates: loc.coordinates,

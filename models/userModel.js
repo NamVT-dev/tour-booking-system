@@ -59,7 +59,7 @@ const userSchema = new mongoose.Schema({
   description: {
     type: String,
   },
-});
+}, { timestamps: true });
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
@@ -121,6 +121,19 @@ userSchema.methods.confirmEmail = function (pin) {
   this.confirmPinExpires = undefined;
 
   return true;
+};
+
+userSchema.methods.createPasswordResetToken = function () {
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  return resetToken;
 };
 
 const User = mongoose.model("User", userSchema, "users");

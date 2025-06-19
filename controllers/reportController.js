@@ -307,7 +307,7 @@ exports.getBookingDetails = catchAsync(async (req, res, next) => {
         regex.test(b.user?.email || "")
     );
   }
-
+  
   // Format kết quả
   const formatted = bookings.map((b) => ({
     bookingId: b._id,

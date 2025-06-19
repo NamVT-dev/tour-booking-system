@@ -60,4 +60,18 @@ module.exports = class Email {
       `${this.firstName}, mã pin của bạn là ${this.data?.pin}, vui lòng xác nhận địa chỉ email của bạn`
     );
   }
+
+  async sendTourApproval() {
+    const subject =
+      this.data?.decision === "active"
+        ? `Tour "${this.data.tourName}" đã được phê duyệt!`
+        : `Tour "${this.data.tourName}" đã bị từ chối!`;
+    await this.send("tourApproval", subject);
+  }
+  async sendPasswordReset() {
+    await this.send(
+      "passwordReset",
+      "Cài lại mật khẩu trên Fvivu (khả dụng trong 10p)"
+    );
+  }
 };
