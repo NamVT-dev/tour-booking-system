@@ -44,12 +44,11 @@ const tourSchema = new mongoose.Schema(
     },
     priceDiscount: {
       type: Number,
-      validate: {
-        validator: function (val) {
-          return val < this.price;
-        },
-        message: "Giá chiết khấu ({VALUE}) phải thấp hơn giá thông thường",
-      },
+      min: [0, "Giảm giá không thể âm"],
+      max: [100, "Giảm giá không vượt quá 100%"],
+    },
+    finalPrice: {
+      type: Number,
     },
     summary: {
       type: String,
@@ -72,7 +71,6 @@ const tourSchema = new mongoose.Schema(
     },
     startDates: [Date],
     startLocation: {
-      // GeoJSON
       type: {
         type: String,
         default: "Point",
@@ -108,6 +106,9 @@ const tourSchema = new mongoose.Schema(
 
 tourSchema.pre("save", function (next) {
   this.slug = slugify(this.name, { lower: true });
+  if (this.price && this.priceDiscount >= 0) {
+    this.finalPrice = this.price - (this.price * this.priceDiscount) / 100;
+  }
   next();
 });
 

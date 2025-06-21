@@ -11,6 +11,7 @@ exports.createTour = catchAsync(async (req, res) => {
     });
   }
 
+  // Gán đối tác hiện tại và để model xử lý finalPrice
   const tourData = {
     ...req.body,
     partner: req.user._id,
@@ -25,6 +26,7 @@ exports.createTour = catchAsync(async (req, res) => {
     },
   });
 });
+
 //Lay tour theo partner
 exports.getPartnerTours = catchAsync(async (req, res) => {
   const partnerId = req.user.id;
