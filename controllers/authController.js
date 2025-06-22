@@ -43,13 +43,14 @@ exports.signup = catchAsync(async (req, res, next) => {
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
   });
-
+  console.log("Đã tạo user");
   const confirmPin = newUser.createConfirmPin();
 
   await newUser.save({ validateBeforeSave: false });
-
+  console.log(" Gửi email xác nhận");
   try {
     await new Email(newUser, { pin: confirmPin }).sendConfirmEmail();
+    console.log("Gửi email xong");
     createSendToken(newUser, 201, req, res);
     /*eslint-disable-next-line*/
   } catch (err) {
