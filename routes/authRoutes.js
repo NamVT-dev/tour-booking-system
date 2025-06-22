@@ -32,6 +32,11 @@ router.get(
   authController.protect,
   authController.resendConfirmEmail
 );
+router.patch(
+  "/updateProfile",
+  authController.protect,
+  authController.updateProfile
+);
 
 router.post("/forgotPassword", authController.forgotPassword);
 
