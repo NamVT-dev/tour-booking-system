@@ -19,6 +19,12 @@ router.get(
   authController.getProfile
 );
 
+router.patch(
+  "/update/profile",
+  authController.protect,
+  authController.updateProfile
+);
+
 router.get(
   "/confirmEmail/:pin",
   authController.bypassInactiveProtect,
@@ -31,11 +37,6 @@ router.get(
   authController.bypassInactiveProtect,
   authController.protect,
   authController.resendConfirmEmail
-);
-router.patch(
-  "/updateProfile",
-  authController.protect,
-  authController.updateProfile
 );
 
 router.post("/forgotPassword", authController.forgotPassword);
