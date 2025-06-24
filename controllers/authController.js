@@ -275,3 +275,41 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   createSendToken(user, 200, req, res);
 });
+exports.updateProfile = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  const role = req.user.role;
+
+  if (!req.body) {
+    return next(new AppError("Không có dữ liệu gửi lên", 400));
+  }
+
+  const allowedFieldsCustomer = ["name", "photo"];
+  const allowedFieldsPartner = ["name", "photo", "description"];
+
+  const filterObj = (obj, ...allowedFields) => {
+    const newObj = {};
+    Object.keys(obj).forEach((key) => {
+      if (allowedFields.includes(key)) newObj[key] = obj[key];
+    });
+    return newObj;
+  };
+
+  let filteredData;
+  if (role === "customer") {
+    filteredData = filterObj(req.body, ...allowedFieldsCustomer);
+  } else if (role === "partner") {
+    filteredData = filterObj(req.body, ...allowedFieldsPartner);
+  } else {
+    return next(new AppError("Bạn không có quyền thực hiện thao tác này", 403));
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(userId, filteredData, {
+    new: true,
+    runValidators: true,
+  });
+
+  res.status(200).json({
+    status: "success",
+    data: { user: updatedUser },
+  });
+});

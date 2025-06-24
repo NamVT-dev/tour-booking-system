@@ -12,12 +12,14 @@ router.patch(
   authController.updatePassword
 );
 
-router.get(
-  "/profile",
-  authController.bypassInactiveProtect,
-  authController.protect,
-  authController.getProfile
-);
+router
+  .route("/profile")
+  .get(
+    authController.bypassInactiveProtect,
+    authController.protect,
+    authController.getProfile
+  )
+  .patch(authController.protect, authController.updateProfile);
 
 router.get(
   "/confirmEmail/:pin",
