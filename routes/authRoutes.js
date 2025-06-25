@@ -19,7 +19,12 @@ router
     authController.protect,
     authController.getProfile
   )
-  .patch(authController.protect, authController.updateProfile);
+  .patch(
+    authController.protect,
+    authController.uploadUserPhoto,
+    authController.resizeUserPhoto,
+    authController.updateProfile
+  );
 
 router.get(
   "/confirmEmail/:pin",

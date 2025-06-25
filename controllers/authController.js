@@ -1,10 +1,47 @@
+const multer = require("multer");
+const sharp = require("sharp");
 const { promisify } = require("node:util");
 const crypto = require("node:crypto");
 const jwt = require("jsonwebtoken");
+
 const User = require("./../models/userModel");
 const catchAsync = require("./../utils/catchAsync");
 const AppError = require("./../utils/appError");
 const Email = require("../utils/email");
+const { uploadToCloudinary } = require("../config/cloudinary");
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    cb(new AppError("Not an image! Please upload only images.", 400), false);
+  }
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+exports.uploadUserPhoto = upload.single("photo");
+
+exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
+  if (!req.file) return next();
+
+  const filename = `user-${req.user.id}-${Date.now()}.jpeg`;
+
+  const buffer = await sharp(req.file.buffer)
+    .resize(500, 500)
+    .toFormat("jpeg")
+    .jpeg({ quality: 90 })
+    .toBuffer();
+  const uploadedPhoto = await uploadToCloudinary("users", buffer, filename);
+  req.file.filename = uploadedPhoto.secure_url;
+
+  next();
+});
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -275,41 +312,40 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   createSendToken(user, 200, req, res);
 });
+
 exports.updateProfile = catchAsync(async (req, res, next) => {
-  const userId = req.user._id;
-  const role = req.user.role;
-
-  if (!req.body) {
-    return next(new AppError("Không có dữ liệu gửi lên", 400));
+  // 1) Create error if user POSTs password data
+  if (req.body.password || req.body.passwordConfirm) {
+    return next(
+      new AppError(
+        "Tuyến này không dùng để đổi mật khẩu. Hãy dùng /auth/updatePassword",
+        400
+      )
+    );
   }
-
-  const allowedFieldsCustomer = ["name", "photo"];
-  const allowedFieldsPartner = ["name", "photo", "description"];
 
   const filterObj = (obj, ...allowedFields) => {
     const newObj = {};
-    Object.keys(obj).forEach((key) => {
-      if (allowedFields.includes(key)) newObj[key] = obj[key];
+    Object.keys(obj).forEach((el) => {
+      if (allowedFields.includes(el)) newObj[el] = obj[el];
     });
     return newObj;
   };
 
-  let filteredData;
-  if (role === "customer") {
-    filteredData = filterObj(req.body, ...allowedFieldsCustomer);
-  } else if (role === "partner") {
-    filteredData = filterObj(req.body, ...allowedFieldsPartner);
-  } else {
-    return next(new AppError("Bạn không có quyền thực hiện thao tác này", 403));
-  }
+  // 2) Filtered out unwanted fields names that are not allowed to be updated
+  const filteredBody = filterObj(req.body, "name", "description");
+  if (req.file) filteredBody.photo = req.file.filename;
 
-  const updatedUser = await User.findByIdAndUpdate(userId, filteredData, {
+  // 3) Update user document
+  const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
     new: true,
     runValidators: true,
   });
 
   res.status(200).json({
     status: "success",
-    data: { user: updatedUser },
+    data: {
+      user: updatedUser,
+    },
   });
 });
