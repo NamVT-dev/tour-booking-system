@@ -11,5 +11,10 @@ router.use(authController.protect);
 router.post("/", bookingController.createBooking);
 router.get("/my", bookingController.getMyBookings);
 router.post("/checkout-session", bookingController.getCheckoutSession);
-
+router.get(
+  "/partner",
+  authController.protect,
+  authController.restrictTo("partner"),
+  bookingController.getPartnerBookings
+);
 module.exports = router;
