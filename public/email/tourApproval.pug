@@ -1,0 +1,18 @@
+doctype html
+html
+  head
+    title= subject
+  body
+    h2 Xin chào #{firstName},
+    p
+      | Tour 
+      strong #{tourName}
+      |  của bạn đã được 
+      strong #{decision === "active" ? "phê duyệt" : "từ chối"}
+      | .
+    if decision === "active"
+      p Chúc mừng bạn! Tour của bạn đã được hiển thị trên hệ thống Fvivu.
+    else
+      p Rất tiếc, tour của bạn chưa đáp ứng yêu cầu. Vui lòng kiểm tra lại thông tin và gửi lại.
+    p Trân trọng,
+    p Đội ngũ quản trị Fvivu
