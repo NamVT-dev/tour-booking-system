@@ -21,7 +21,15 @@ exports.createReview = catchAsync(async (req, res, next) => {
     rating,
     createdAt: new Date(),
   });
+  const reviews = await Review.find({ tour: tourId });
 
+  const ratingsQuantity = reviews.length;
+  const ratingsAverage =
+    reviews.reduce((acc, cur) => acc + cur.rating, 0) / ratingsQuantity;
+
+  tour.ratingsQuantity = ratingsQuantity;
+  tour.ratingsAverage = ratingsAverage;
+  await tour.save({ validateBeforeSave: false });
   res.status(201).json({
     status: "success",
     data: newReview,

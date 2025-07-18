@@ -169,12 +169,11 @@ exports.deleteTour = catchAsync(async (req, res, next) => {
 exports.getAllTours = catchAsync(async (req, res) => {
   const {
     page = 1,
-    limit = 10,
+    limit = 6,
     sort = "-createdAt",
     search = "",
     minPrice,
     maxPrice,
-    location,
   } = req.query;
 
   const skip = (page - 1) * limit;
@@ -195,27 +194,33 @@ exports.getAllTours = catchAsync(async (req, res) => {
   if (minPrice) priceConditions.$gte = Number(minPrice);
   if (maxPrice) priceConditions.$lte = Number(maxPrice);
 
-  // Lọc theo địa điểm
-  const locationConditions = location
-    ? {
-        $or: [
-          {
-            "startLocation.description": { $regex: location, $options: "i" },
-          },
-          { "locations.description": { $regex: location, $options: "i" } },
-        ],
-      }
-    : {};
+  // Lọc theo ratingsAverage
+  let ratingsConditions = {};
+  if (
+    req.query.ratingsAverage &&
+    req.query.ratingsAverage !== "Tất cả đánh giá"
+  ) {
+    const rating = Number(req.query.ratingsAverage);
+    if (rating === 5) {
+      ratingsConditions = { $eq: 5 };
+    } else if (rating === 4) {
+      ratingsConditions = { $gte: 4 };
+    } else if (rating === 3) {
+      ratingsConditions = { $gte: 3 };
+    }
+  }
 
   // Tổng hợp điều kiện
   const filterQuery = {
     ...searchConditions,
-    ...locationConditions,
     status: "active",
   };
 
   if (Object.keys(priceConditions).length > 0) {
     filterQuery.price = priceConditions;
+  }
+  if (Object.keys(ratingsConditions).length > 0) {
+    filterQuery.ratingsAverage = ratingsConditions;
   }
 
   // Truy vấn database
