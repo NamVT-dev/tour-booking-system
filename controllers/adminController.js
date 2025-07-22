@@ -88,11 +88,26 @@ const createPartnerAccount = catchAsync(async (req, res, next) => {
     `Partner created - Email: ${email},Password: ${temporaryPassword}`
   );
 
+  //send mail welcome
+  let emailFailed = false;
+  try {
+    const emailService = new Email(newPartner,{
+      email:newPartner.email,
+      password: temporaryPassword,
+    });
+    await emailService.sendPartnerWelcome();
+  } catch (err) {
+    console.error("gửi email thất bại:",err);
+    emailFailed = true;
+  }
+
   //response
 
   res.status(201).json({
     status: "success",
-    message: "Tạo tài khoản partner thành công",
+    message: emailFailed
+    ?"Tạo tài khoản partner thành công, nhưng gửi email thất bại. Vui lòng gửi email thủ công cho partner"
+    :"Tạo tài khoản partner thành công",
     data: {
       user: {
         id: newPartner._id,
@@ -102,6 +117,7 @@ const createPartnerAccount = catchAsync(async (req, res, next) => {
         description: newPartner.description,
         active: newPartner.active,
       },
+      emailStatus: emailFailed ? "failed" : "sent",
     },
   });
 });
