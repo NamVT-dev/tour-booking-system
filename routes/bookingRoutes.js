@@ -12,7 +12,7 @@ router.post("/", bookingController.createBooking);
 router.get("/my", bookingController.getMyBookings);
 router.post("/checkout-session", bookingController.getCheckoutSession);
 router.get(
-  "/partner/bookings",
+  "/partner",
   authController.protect,
   authController.restrictTo("partner"),
   bookingController.getPartnerBookings
