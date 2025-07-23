@@ -28,34 +28,49 @@ exports.uploadTourImages = upload.fields([
 ]);
 
 exports.resizeTourImages = catchAsync(async (req, res, next) => {
-  if (!req.files?.imageCover || !req.files?.images) return next();
-  // 1) Cover image
-  const coverFilename = `tour-${req.params.id}-${Date.now()}-cover.jpeg`;
-  const buffer = await sharp(req.files.imageCover[0].buffer)
-    .resize(2000, 1333)
-    .toFormat("jpeg")
-    .jpeg({ quality: 90 })
-    .toBuffer();
+  if (!req.files) return next();
 
-  const uploadCover = await uploadToCloudinary("tours", buffer, coverFilename);
-  req.body.imageCover = uploadCover.secure_url;
+  const timestamp = Date.now();
+
+  // 1) Cover image
+  if (req.files.imageCover && req.files.imageCover[0]) {
+    const coverFilename = `tour-${timestamp}-cover.jpeg`;
+    const buffer = await sharp(req.files.imageCover[0].buffer)
+      .resize(2000, 1333)
+      .toFormat("jpeg")
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    const uploadCover = await uploadToCloudinary(
+      "tours",
+      buffer,
+      coverFilename
+    );
+    req.body.imageCover = uploadCover.secure_url;
+  }
+
   // 2) Images
   req.body.images = [];
+  if (req.files.images && req.files.images.length > 0) {
+    await Promise.all(
+      req.files.images.map(async (file, i) => {
+        const filename = `tour-${timestamp}-${i + 1}.jpeg`;
 
-  await Promise.all(
-    req.files.images.map(async (file, i) => {
-      const filename = `tour-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+        const buffer = await sharp(file.buffer)
+          .resize(2000, 1333)
+          .toFormat("jpeg")
+          .jpeg({ quality: 90 })
+          .toBuffer();
 
-      const buffer = await sharp(file.buffer)
-        .resize(2000, 1333)
-        .toFormat("jpeg")
-        .jpeg({ quality: 90 })
-        .toBuffer(); // Chuyển thành buffer
-
-      const uploadedImage = await uploadToCloudinary("tours", buffer, filename);
-      req.body.images.push(uploadedImage.secure_url); // Lưu URL ảnh
-    })
-  );
+        const uploadedImage = await uploadToCloudinary(
+          "tours",
+          buffer,
+          filename
+        );
+        req.body.images.push(uploadedImage.secure_url);
+      })
+    );
+  }
 
   next();
 });
@@ -66,12 +81,51 @@ exports.createTour = catchAsync(async (req, res, next) => {
     return next(new AppError("Chỉ partner mới được tạo tour", 403));
   }
 
+ 
+  const startLocation = {
+    type: "Point", 
+    address:
+      req.body["startLocation[address]"] ||
+      req.body.startLocation?.address ||
+      "",
+    description:
+      req.body["startLocation[description]"] ||
+      req.body.startLocation?.description ||
+      "",
+    coordinates:
+      req.body["startLocation[coordinates]"] ||
+      req.body.startLocation?.coordinates || [],
+  };
+
+ 
+  let startDates = [];
+  if (req.body.startDates) {
+    if (Array.isArray(req.body.startDates)) {
+      startDates = req.body.startDates.map((d) => new Date(d));
+    } else {
+      startDates = [new Date(req.body.startDates)];
+    }
+  }
+
+  
   const tourData = {
-    ...req.body,
+    name: req.body.name,
+    duration: req.body.duration,
+    maxGroupSize: req.body.maxGroupSize,
+    price: req.body.price,
+    priceDiscount: req.body.priceDiscount,
+    summary: req.body.summary,
+    description: req.body.description,
+    imageCover: req.body.imageCover,
+    images: req.body.images,
+    startLocation,        
+    startDates,           
     partner: req.user._id,
+    status: "pending",    
   };
 
   const newTour = await Tour.create(tourData);
+
   res.status(201).json({
     status: "success",
     data: {
@@ -79,6 +133,7 @@ exports.createTour = catchAsync(async (req, res, next) => {
     },
   });
 });
+
 
 exports.getPartnerTours = catchAsync(async (req, res) => {
   const partnerId = req.user.id;
@@ -118,20 +173,26 @@ exports.updateTour = catchAsync(async (req, res, next) => {
   if (!tour) {
     return next(new AppError("Không tìm thấy tour", 404));
   }
-  //Check role moi duoc update
+
+  // Nếu là partner, chỉ được chỉnh sửa các trường khác ngoài 'status'
   if (req.user.role === "partner") {
     if (tour.partner.toString() !== req.user._id.toString()) {
       return next(
         new AppError("Bạn chỉ được quyền chỉnh sửa tour cá nhân", 403)
       );
     }
-  } else if (req.user.role !== "admin") {
+    delete req.body.status;
+  }
+
+  // Nếu không phải admin cũng không được cập nhật tour người khác
+  if (req.user.role !== "admin" && req.user.role !== "partner") {
     return res.status(403).json({
       status: "fail",
-      message: "You are not allowed to update this tour",
+      message: "Bạn không có quyền chỉnh sửa tour này",
     });
   }
 
+  // Cập nhật các trường còn lại
   Object.keys(req.body).forEach((key) => {
     tour[key] = req.body[key];
   });
