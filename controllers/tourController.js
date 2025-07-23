@@ -3,7 +3,6 @@ const multer = require("multer");
 const sharp = require("sharp");
 
 const Tour = require("../models/tourModel");
-const Review = require("../models/reviewModel");
 const AppError = require("../utils/appError");
 const { uploadToCloudinary } = require("../config/cloudinary");
 
@@ -231,45 +230,13 @@ exports.getAllTours = catchAsync(async (req, res) => {
 
   const total = await Tour.countDocuments(filterQuery);
 
-  const toursWithRating = await Promise.all(
-    tours.map(async (tour) => {
-      const ratingsData = await Review.aggregate([
-        { $match: { tour: tour._id } },
-        {
-          $group: {
-            _id: "$tour",
-            avgRating: { $avg: "$rating" },
-            numRatings: { $sum: 1 },
-          },
-        },
-      ]);
-      const oldAvg = tour.ratingsAverage || 0;
-      const oldNum = tour.ratingsQuantity || 0;
-
-      const newAvg = ratingsData[0]?.avgRating || 0;
-      const newNum = ratingsData[0]?.numRatings || 0;
-
-      const totalNum = oldNum + newNum;
-      let totalAvg = 0;
-      if (totalNum > 0) {
-        totalAvg = (oldAvg * oldNum + newAvg * newNum) / totalNum;
-      }
-
-      return {
-        ...tour.toObject(),
-        rating: Math.round(totalAvg * 10) / 10,
-        reviews: totalNum,
-      };
-    })
-  );
-
   res.status(200).json({
     status: "success",
     currentPage: parseInt(page),
     totalPages: Math.ceil(total / limit),
     results: tours.length,
     data: {
-      tours: toursWithRating,
+      tours,
     },
   });
 });
@@ -284,36 +251,13 @@ exports.getTourBySlug = catchAsync(async (req, res, next) => {
     return next(new AppError("Không tìm thấy tour", 404));
   }
 
-  // Tính ratings bằng aggregation
-  const ratingsData = await Review.aggregate([
-    { $match: { tour: tour._id } },
-    {
-      $group: {
-        _id: "$tour",
-        avgRating: { $avg: "$rating" },
-        numRatings: { $sum: 1 },
-      },
-    },
-  ]);
-
-  const oldAvg = tour.ratingsAverage || 0;
-  const oldNum = tour.ratingsQuantity || 0;
-
-  const newAvg = ratingsData[0]?.avgRating || 0;
-  const newNum = ratingsData[0]?.numRatings || 0;
-  const totalNum = oldNum + newNum;
-  let totalAvg = 0;
-  if (totalNum > 0) {
-    totalAvg = (oldAvg * oldNum + newAvg * newNum) / totalNum;
-  }
-
   const tourResponse = {
     id: tour._id,
     name: tour.name,
     duration: tour.duration,
     maxGroupSize: tour.maxGroupSize,
-    rating: Math.round(totalAvg * 10) / 10,
-    reviews: totalNum,
+    rating: tour.ratingsAverage,
+    reviews: tour.ratingsQuantity,
     price: tour.price,
     summary: tour.summary,
     description: tour.description,
