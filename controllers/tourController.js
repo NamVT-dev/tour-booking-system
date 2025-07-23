@@ -69,6 +69,7 @@ exports.createTour = catchAsync(async (req, res, next) => {
   const tourData = {
     ...req.body,
     partner: req.user._id,
+    status: "pending"
   };
 
   const newTour = await Tour.create(tourData);
@@ -125,6 +126,7 @@ exports.updateTour = catchAsync(async (req, res, next) => {
         new AppError("Bạn chỉ được quyền chỉnh sửa tour cá nhân", 403)
       );
     }
+    delete req.body.status;
   } else if (req.user.role !== "admin") {
     return res.status(403).json({
       status: "fail",

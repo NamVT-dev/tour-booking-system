@@ -6,21 +6,30 @@ const Booking = require("../models/bookingModel")
 
 const getNewUsersAndPartners = catchAsync(async (req, res, next) => {
     const {
-        range = '1d', groupBy = 'day'
+        range = '1d', groupBy = 'day',from ,to
     } = req.query;
 
     const validRanges = ['1d', '7d', '1m', '3m', '6m', '1y'];
     const validGroups = ['day', 'month'];
-
-    if (!validRanges.includes(range)) {
-        return next(new AppError("Invalid range parameter", 400));
-    }
     if (!validGroups.includes(groupBy)) {
-        return next(new AppError("groupBy must be 'day' or 'month'", 400));
+        return next(new AppError("groupBy phải là 'day' hoặc 'month'", 400));
     }
-
+    if (!from || !to){
+        if (!validRanges.includes(range)) {
+            return next(new AppError("range không hợp lệ", 400));
+        }
+    }
     // Tính fromDate
+    let fromDate, toDate;
     const now = new Date();
+
+    if(from && to){
+        fromDate = new Date(from);
+        toDate = new Date(to);
+        if (isNaN(fromDate) || isNaN(toDate)) {
+            return next(new AppError("Ngày không hợp lệ", 400));
+        }
+    } else{
     const rangeMap = {
         '1d': () => new Date(now.getFullYear(), now.getMonth(), now.getDate()),
         '7d': () => {
@@ -28,7 +37,6 @@ const getNewUsersAndPartners = catchAsync(async (req, res, next) => {
             date.setDate(now.getDate() - 6);
             return date;
         },
-        // '1m': () => new Date(now.getFullYear(), now.getMonth(), 1),
         '1m': () => {
             const d = new Date(now);
             d.setMonth(d.getMonth() - 1);
@@ -50,9 +58,9 @@ const getNewUsersAndPartners = catchAsync(async (req, res, next) => {
             return d;
         }
     };
-    const fromDate = rangeMap[range]();
-    const toDate = now;
-
+    fromDate = rangeMap[range]();
+    toDate = now;
+    }
     const truncateUnit = groupBy;
 
     const stats = await User.aggregate([{
@@ -151,11 +159,19 @@ const getNewUsersAndPartners = catchAsync(async (req, res, next) => {
 
 const getRevenueStats = catchAsync(async (req, res, next) => {
     const {
-        range = 'day', groupBy = 'day'
+        range = 'day', groupBy = 'day', from, to
     } = req.query;
 
     const now = new Date();
-    let fromDate;
+    let fromDate, toDate;
+
+    if (from && to) {
+    fromDate = new Date(from);
+    toDate = new Date(to);
+        if (isNaN(fromDate) || isNaN(toDate)) {
+            return next(new AppError("Ngày không hợp lệ", 400));
+        }
+    } else {
 
     switch (range) {
         case 'day':
@@ -172,8 +188,10 @@ const getRevenueStats = catchAsync(async (req, res, next) => {
             fromDate = new Date(now.getFullYear(), 0, 1);
             break;
         default:
-            return next(new AppError('Invalid range parameter', 400));
+            return next(new AppError('range không hợp lệ', 400));
     }
+    toDate = now;
+}
 
     let dateFormat;
     if (groupBy === 'day') {
@@ -213,13 +231,13 @@ const getRevenueStats = catchAsync(async (req, res, next) => {
             }
         };
     } else {
-        return next(new AppError('Invalid groupBy parameter', 400));
+        return next(new AppError('groupBy không hợp lệ', 400));
     }
     const stats = await Booking.aggregate([{
             $match: {
                 createdAt: {
                     $gte: fromDate,
-                    $lte: now
+                    $lte: toDate
                 },
                 paid: true
             }
@@ -255,7 +273,7 @@ const getRevenueStats = catchAsync(async (req, res, next) => {
             period: range,
             groupBy: groupBy,
             from: fromDate,
-            to: now,
+            to: toDate,
             stats: stats,
             totalAllRevenue:totalRevenue
         }

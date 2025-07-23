@@ -74,4 +74,9 @@ module.exports = class Email {
       "Cài lại mật khẩu trên Fvivu (khả dụng trong 10p)"
     );
   }
+  async sendPartnerWelcome() {
+  await this.send(
+      "partnerWelcome",
+      "Tài khoản đối tác Fvivu đã được tạo!");
+}
 };
