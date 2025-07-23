@@ -136,21 +136,25 @@ exports.getTourStartDates = catchAsync(async (req, res, next) => {
 });
 exports.getPartnerBookings = catchAsync(async (req, res) => {
   const partnerId = req.user._id;
-
+ console.log("🔍 Partner ID:", partnerId);
   // Tìm tour thuộc về partner
   const partnerTours = await Tour.find({ partner: partnerId }).select("_id");
-
+console.log("📋 Danh sách tour thuộc partner:", partnerTours);
   if (!partnerTours.length) {
+    console.log("⚠️ Partner chưa có tour nào.");
     return res.status(404).json({
       status: "fail",
       message: "Bạn chưa có tour nào được đặt!",
     });
   }
   const tourIds = partnerTours.map((tour) => tour._id);
+  console.log("✅ Các tourId sẽ dùng để tìm booking:", tourIds);
+
   // Lấy danh sách booking có tour thuộc về partner
   const bookings = await Booking.find({ tour: { $in: tourIds } })
     .populate("user", "name email")
     .populate("tour", "name price duration");
+    console.log("📦 Booking tìm được:", bookings);
   res.status(200).json({
     status: "success",
     results: bookings.length,
