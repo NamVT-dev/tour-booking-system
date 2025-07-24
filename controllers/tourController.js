@@ -3,7 +3,6 @@ const multer = require("multer");
 const sharp = require("sharp");
 
 const Tour = require("../models/tourModel");
-const Review = require("../models/reviewModel");
 const AppError = require("../utils/appError");
 const { uploadToCloudinary } = require("../config/cloudinary");
 
@@ -171,12 +170,11 @@ exports.deleteTour = catchAsync(async (req, res, next) => {
 exports.getAllTours = catchAsync(async (req, res) => {
   const {
     page = 1,
-    limit = 10,
+    limit = 6,
     sort = "-createdAt",
     search = "",
     minPrice,
     maxPrice,
-    location,
   } = req.query;
 
   const skip = (page - 1) * limit;
@@ -197,27 +195,33 @@ exports.getAllTours = catchAsync(async (req, res) => {
   if (minPrice) priceConditions.$gte = Number(minPrice);
   if (maxPrice) priceConditions.$lte = Number(maxPrice);
 
-  // Lọc theo địa điểm
-  const locationConditions = location
-    ? {
-        $or: [
-          {
-            "startLocation.description": { $regex: location, $options: "i" },
-          },
-          { "locations.description": { $regex: location, $options: "i" } },
-        ],
-      }
-    : {};
+  // Lọc theo ratingsAverage
+  let ratingsConditions = {};
+  if (
+    req.query.ratingsAverage &&
+    req.query.ratingsAverage !== "Tất cả đánh giá"
+  ) {
+    const rating = Number(req.query.ratingsAverage);
+    if (rating === 5) {
+      ratingsConditions = { $eq: 5 };
+    } else if (rating === 4) {
+      ratingsConditions = { $gte: 4 };
+    } else if (rating === 3) {
+      ratingsConditions = { $gte: 3 };
+    }
+  }
 
   // Tổng hợp điều kiện
   const filterQuery = {
     ...searchConditions,
-    ...locationConditions,
     status: "active",
   };
 
   if (Object.keys(priceConditions).length > 0) {
     filterQuery.price = priceConditions;
+  }
+  if (Object.keys(ratingsConditions).length > 0) {
+    filterQuery.ratingsAverage = ratingsConditions;
   }
 
   // Truy vấn database
@@ -249,28 +253,13 @@ exports.getTourBySlug = catchAsync(async (req, res, next) => {
     return next(new AppError("Không tìm thấy tour", 404));
   }
 
-  // Tính ratings bằng aggregation
-  const ratingsData = await Review.aggregate([
-    { $match: { tour: tour._id } },
-    {
-      $group: {
-        _id: "$tour",
-        avgRating: { $avg: "$rating" },
-        numRatings: { $sum: 1 },
-      },
-    },
-  ]);
-
-  const avgRating = ratingsData[0]?.avgRating || 0;
-  const numRatings = ratingsData[0]?.numRatings || 0;
-
   const tourResponse = {
     id: tour._id,
     name: tour.name,
     duration: tour.duration,
     maxGroupSize: tour.maxGroupSize,
-    rating: Math.round(avgRating * 10) / 10,
-    reviews: numRatings,
+    rating: tour.ratingsAverage,
+    reviews: tour.ratingsQuantity,
     price: tour.price,
     summary: tour.summary,
     description: tour.description,
