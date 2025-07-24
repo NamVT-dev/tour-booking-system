@@ -26,7 +26,7 @@ router.post(
   tourController.updateTourStatusByPartner
 );
 router.patch(
-  "/:id",
+  "update/:id",
   tourController.uploadTourImages,
   tourController.resizeTourImages,
   tourController.updateTour

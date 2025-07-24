@@ -109,20 +109,21 @@ exports.createTour = catchAsync(async (req, res, next) => {
 
   
   const tourData = {
-    name: req.body.name,
-    duration: req.body.duration,
-    maxGroupSize: req.body.maxGroupSize,
-    price: req.body.price,
-    priceDiscount: req.body.priceDiscount,
-    summary: req.body.summary,
-    description: req.body.description,
-    imageCover: req.body.imageCover,
-    images: req.body.images,
-    startLocation,        
-    startDates,           
-    partner: req.user._id,
-    status: "pending",    
-  };
+  name: req.body.name,
+  duration: Number(req.body.duration),
+  maxGroupSize: Number(req.body.maxGroupSize),
+  price: Number(req.body.price),
+  priceDiscount: Number(req.body.priceDiscount),
+  summary: req.body.summary,
+  description: req.body.description,
+  imageCover: req.body.imageCover,
+  images: req.body.images,
+  startLocation,
+  startDates,
+  partner: req.user._id,
+  status: "pending",
+};
+
 
   const newTour = await Tour.create(tourData);
 
