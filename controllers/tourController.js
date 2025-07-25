@@ -12,7 +12,10 @@ const multerFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image")) {
     cb(null, true);
   } else {
-    cb(new AppError("Not an image! Please upload only images.", 400), false);
+    cb(
+      new AppError("Không phải ảnh! Xin hãy đăng đúng định dạng ảnh.", 400),
+      false
+    );
   }
 };
 
@@ -112,6 +115,7 @@ exports.getTourById = catchAsync(async (req, res, next) => {
 
 //Patch
 exports.updateTour = catchAsync(async (req, res, next) => {
+  console.log(req.body.description);
   const tourId = req.params.id;
   const tour = await Tour.findById(tourId);
 
