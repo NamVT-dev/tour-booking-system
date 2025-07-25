@@ -68,7 +68,7 @@ exports.createTour = catchAsync(async (req, res, next) => {
   const tourData = {
     ...req.body,
     partner: req.user._id,
-    status: "pending"
+    status: "pending",
   };
 
   const newTour = await Tour.create(tourData);
