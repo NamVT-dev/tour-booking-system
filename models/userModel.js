@@ -5,61 +5,64 @@ const crypto = require("node:crypto");
 
 const { generateRandomPin } = require("../utils/passwordUtils");
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, "Xin hãy cung cấp tên của bạn"],
-  },
-  email: {
-    type: String,
-    required: [true, "Xin hãy cung cấp email của bạn"],
-    unique: true,
-    lowercase: true,
-    validate: [validator.isEmail, "Email không hợp lệ"],
-  },
-  photo: {
-    type: String,
-    default:
-      "https://res.cloudinary.com/dmskqrjiu/image/upload/v1742210170/users/default.jpg.jpg",
-  },
-  role: {
-    type: String,
-    enum: ["customer", "admin", "partner"],
-    default: "customer",
-  },
-  password: {
-    type: String,
-    required: [true, "Xin hãy đặt mật khẩu"],
-    minlength: [8, "Mật khẩu phải chứa ít nhất 8 ký tự"],
-    validate: [
-      validator.isStrongPassword,
-      "Mật khẩu phải chứa ít nhất 8 ký tự, bao gồm ký tự đặc biệt, chữ in hoa và số",
-    ],
-    select: false,
-  },
-  passwordConfirm: {
-    type: String,
-    required: [true, "Xin hãy xác nhận mật khẩu"],
-    validate: {
-      validator: function (el) {
-        return el === this.password;
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Xin hãy cung cấp tên của bạn"],
+    },
+    email: {
+      type: String,
+      required: [true, "Xin hãy cung cấp email của bạn"],
+      unique: true,
+      lowercase: true,
+      validate: [validator.isEmail, "Email không hợp lệ"],
+    },
+    photo: {
+      type: String,
+      default:
+        "https://res.cloudinary.com/dmskqrjiu/image/upload/v1742210170/users/default.jpg.jpg",
+    },
+    role: {
+      type: String,
+      enum: ["customer", "admin", "partner"],
+      default: "customer",
+    },
+    password: {
+      type: String,
+      required: [true, "Xin hãy đặt mật khẩu"],
+      minlength: [8, "Mật khẩu phải chứa ít nhất 8 ký tự"],
+      validate: [
+        validator.isStrongPassword,
+        "Mật khẩu phải chứa ít nhất 8 ký tự, bao gồm ký tự đặc biệt, chữ in hoa và số",
+      ],
+      select: false,
+    },
+    passwordConfirm: {
+      type: String,
+      required: [true, "Xin hãy xác nhận mật khẩu"],
+      validate: {
+        validator: function (el) {
+          return el === this.password;
+        },
+        message: "Mật khẩu không trùng khớp",
       },
-      message: "Mật khẩu không trùng khớp",
+    },
+    passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    confirmPin: String,
+    confirmPinExpires: Date,
+    active: {
+      type: Boolean,
+      default: false,
+    },
+    description: {
+      type: String,
     },
   },
-  passwordChangedAt: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date,
-  confirmPin: String,
-  confirmPinExpires: Date,
-  active: {
-    type: Boolean,
-    default: false,
-  },
-  description: {
-    type: String,
-  },
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
