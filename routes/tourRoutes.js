@@ -8,6 +8,7 @@ router.get("/partner", authController.protect, tourController.getPartnerTours);
 router.get("/:id", authController.protect, tourController.getTourById);
 
 router.get("/", tourController.getAllTours);
+router.post("/:id/remaining-slots", tourController.getRemainingSlots);
 
 router.get("/detail/:slug", tourController.getTourBySlug);
 

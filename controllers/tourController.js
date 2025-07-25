@@ -5,6 +5,8 @@ const sharp = require("sharp");
 const Tour = require("../models/tourModel");
 const AppError = require("../utils/appError");
 const { uploadToCloudinary } = require("../config/cloudinary");
+const Booking = require("../models/bookingModel");
+const { Types } = require("mongoose");
 
 const multerStorage = multer.memoryStorage();
 
@@ -317,4 +319,51 @@ exports.updateTourStatusByPartner = catchAsync(async (req, res, next) => {
   } else {
     return next(new AppError("Tour đã ở trạng thái không hoạt động", 400));
   }
+});
+
+exports.getRemainingSlots = catchAsync(async (req, res, next) => {
+  const tourId = req.params.id;
+  const { startDate } = req.body;
+  console.log(startDate);
+
+  const tour = await Tour.findById(tourId);
+  if (!tour) return next(new AppError("Không tìm thấy tour", 404));
+  const inputDate = new Date(startDate);
+
+  const targetDateString = inputDate.toISOString().split("T")[0];
+
+  const result = await Booking.aggregate([
+    {
+      $match: {
+        tour: new Types.ObjectId(tourId),
+      },
+    },
+    {
+      $addFields: {
+        startDateString: {
+          $dateToString: { format: "%Y-%m-%d", date: "$startDate" },
+        },
+      },
+    },
+    {
+      $match: {
+        startDateString: targetDateString,
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalPeople: { $sum: "$numberOfPeople" },
+      },
+    },
+  ]);
+
+  const takenSlots = result[0]?.totalPeople ?? 0;
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      remainingSlots: tour.maxGroupSize - takenSlots,
+    },
+  });
 });
