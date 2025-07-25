@@ -125,6 +125,11 @@ exports.updateTour = catchAsync(async (req, res, next) => {
         new AppError("Bạn chỉ được quyền chỉnh sửa tour cá nhân", 403)
       );
     }
+    if (req.body.status === "active") {
+      return next(
+        new AppError("Bạn không có quyền sửa trạng thái tour sang active", 403)
+      );
+    }
     delete req.body.status;
   } else if (req.user.role !== "admin") {
     return res.status(403).json({
