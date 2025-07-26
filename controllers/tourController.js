@@ -3,9 +3,10 @@ const multer = require("multer");
 const sharp = require("sharp");
 
 const Tour = require("../models/tourModel");
-const Review = require("../models/reviewModel");
 const AppError = require("../utils/appError");
 const { uploadToCloudinary } = require("../config/cloudinary");
+const Booking = require("../models/bookingModel");
+const { Types } = require("mongoose");
 
 const multerStorage = multer.memoryStorage();
 
@@ -13,7 +14,10 @@ const multerFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image")) {
     cb(null, true);
   } else {
-    cb(new AppError("Not an image! Please upload only images.", 400), false);
+    cb(
+      new AppError("Không phải ảnh! Xin hãy đăng đúng định dạng ảnh.", 400),
+      false
+    );
   }
 };
 
@@ -69,6 +73,7 @@ exports.createTour = catchAsync(async (req, res, next) => {
   const tourData = {
     ...req.body,
     partner: req.user._id,
+    status: "pending",
   };
 
   const newTour = await Tour.create(tourData);
@@ -112,6 +117,7 @@ exports.getTourById = catchAsync(async (req, res, next) => {
 
 //Patch
 exports.updateTour = catchAsync(async (req, res, next) => {
+  console.log(req.body.description);
   const tourId = req.params.id;
   const tour = await Tour.findById(tourId);
 
@@ -125,6 +131,12 @@ exports.updateTour = catchAsync(async (req, res, next) => {
         new AppError("Bạn chỉ được quyền chỉnh sửa tour cá nhân", 403)
       );
     }
+    if (req.body.status === "active") {
+      return next(
+        new AppError("Bạn không có quyền sửa trạng thái tour sang active", 403)
+      );
+    }
+    delete req.body.status;
   } else if (req.user.role !== "admin") {
     return res.status(403).json({
       status: "fail",
@@ -169,12 +181,11 @@ exports.deleteTour = catchAsync(async (req, res, next) => {
 exports.getAllTours = catchAsync(async (req, res) => {
   const {
     page = 1,
-    limit = 10,
+    limit = 6,
     sort = "-createdAt",
     search = "",
     minPrice,
     maxPrice,
-    location,
   } = req.query;
 
   const skip = (page - 1) * limit;
@@ -195,27 +206,33 @@ exports.getAllTours = catchAsync(async (req, res) => {
   if (minPrice) priceConditions.$gte = Number(minPrice);
   if (maxPrice) priceConditions.$lte = Number(maxPrice);
 
-  // Lọc theo địa điểm
-  const locationConditions = location
-    ? {
-        $or: [
-          {
-            "startLocation.description": { $regex: location, $options: "i" },
-          },
-          { "locations.description": { $regex: location, $options: "i" } },
-        ],
-      }
-    : {};
+  // Lọc theo ratingsAverage
+  let ratingsConditions = {};
+  if (
+    req.query.ratingsAverage &&
+    req.query.ratingsAverage !== "Tất cả đánh giá"
+  ) {
+    const rating = Number(req.query.ratingsAverage);
+    if (rating === 5) {
+      ratingsConditions = { $eq: 5 };
+    } else if (rating === 4) {
+      ratingsConditions = { $gte: 4 };
+    } else if (rating === 3) {
+      ratingsConditions = { $gte: 3 };
+    }
+  }
 
   // Tổng hợp điều kiện
   const filterQuery = {
     ...searchConditions,
-    ...locationConditions,
     status: "active",
   };
 
   if (Object.keys(priceConditions).length > 0) {
     filterQuery.price = priceConditions;
+  }
+  if (Object.keys(ratingsConditions).length > 0) {
+    filterQuery.ratingsAverage = ratingsConditions;
   }
 
   // Truy vấn database
@@ -247,28 +264,13 @@ exports.getTourBySlug = catchAsync(async (req, res, next) => {
     return next(new AppError("Không tìm thấy tour", 404));
   }
 
-  // Tính ratings bằng aggregation
-  const ratingsData = await Review.aggregate([
-    { $match: { tour: tour._id } },
-    {
-      $group: {
-        _id: "$tour",
-        avgRating: { $avg: "$rating" },
-        numRatings: { $sum: 1 },
-      },
-    },
-  ]);
-
-  const avgRating = ratingsData[0]?.avgRating || 0;
-  const numRatings = ratingsData[0]?.numRatings || 0;
-
   const tourResponse = {
     id: tour._id,
     name: tour.name,
     duration: tour.duration,
     maxGroupSize: tour.maxGroupSize,
-    rating: Math.round(avgRating * 10) / 10,
-    reviews: numRatings,
+    rating: tour.ratingsAverage,
+    reviews: tour.ratingsQuantity,
     price: tour.price,
     summary: tour.summary,
     description: tour.description,
@@ -317,4 +319,50 @@ exports.updateTourStatusByPartner = catchAsync(async (req, res, next) => {
   } else {
     return next(new AppError("Tour đã ở trạng thái không hoạt động", 400));
   }
+});
+
+exports.getRemainingSlots = catchAsync(async (req, res, next) => {
+  const tourId = req.params.id;
+  const { startDate } = req.body;
+
+  const tour = await Tour.findById(tourId);
+  if (!tour) return next(new AppError("Không tìm thấy tour", 404));
+  const inputDate = new Date(startDate);
+
+  const targetDateString = inputDate.toISOString().split("T")[0];
+
+  const result = await Booking.aggregate([
+    {
+      $match: {
+        tour: new Types.ObjectId(tourId),
+      },
+    },
+    {
+      $addFields: {
+        startDateString: {
+          $dateToString: { format: "%Y-%m-%d", date: "$startDate" },
+        },
+      },
+    },
+    {
+      $match: {
+        startDateString: targetDateString,
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalPeople: { $sum: "$numberOfPeople" },
+      },
+    },
+  ]);
+
+  const takenSlots = result[0]?.totalPeople ?? 0;
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      remainingSlots: tour.maxGroupSize - takenSlots,
+    },
+  });
 });

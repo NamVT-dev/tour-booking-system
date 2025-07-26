@@ -13,7 +13,8 @@ const tourSchema = new mongoose.Schema(
     },
     slug: String,
     duration: {
-      type: String,
+      type: Number,
+      min: [2, "Chuyến tham quan phải kéo dài ít nhất 2 ngày"],
       required: [true, "Một chuyến tham quan phải có thời gian"],
     },
     maxGroupSize: {
@@ -41,15 +42,12 @@ const tourSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: [true, "Một chuyến đi phải có giá"],
+      min: [0, "Giá không được âm"],
     },
     priceDiscount: {
       type: Number,
-      validate: {
-        validator: function (val) {
-          return val < this.price;
-        },
-        message: "Giá chiết khấu ({VALUE}) phải thấp hơn giá thông thường",
-      },
+      min: [0, "Giá giảm chỉ được nằm giữa 0 và 100"],
+      max: [100, "Giá giảm chỉ được nằm giữa 0 và 100"],
     },
     summary: {
       type: String,

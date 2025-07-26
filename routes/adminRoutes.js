@@ -8,7 +8,7 @@ const {
 } = require("./../controllers/adminController");
 const {
   getNewUsersAndPartners,
-  getRevenueStats
+  getRevenueStats,
 } = require("./../controllers/dashboardAdminController");
 
 const authController = require("../controllers/authController");
@@ -23,6 +23,6 @@ router.get("/pendingTour", getPendingTours);
 router.patch("/pendingTour/:tourId/approve", approveTour);
 router.get("/stats/view-new-user", getNewUsersAndPartners);
 router.patch("/users/:userId/ban", banUser);
-router.get("/stats/revenue",getRevenueStats);
+router.get("/stats/revenue", getRevenueStats);
 
 module.exports = router;
