@@ -1,0 +1,25 @@
+extends baseEmail
+
+block content
+  h2(style="margin-bottom: 20px; color: #333;") Thanh toán thành công!
+
+  p(style="font-size: 16px; margin-bottom: 10px; color: #555;") 
+    | Xin chào, 
+    | chúng tôi đã xác nhận thanh toán của bạn cho tour dưới đây:
+
+  table(border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 20px; margin-bottom: 20px;")
+    tr
+      td(strong='true' style="padding: 8px; background: #f9f9f9; color: #333;") Tên tour:
+      td(style="padding: 8px;") #{tourName}
+    tr
+      td(strong='true' style="padding: 8px; background: #f9f9f9; color: #333;") Giá:
+      td(style="padding: 8px;") #{tourPrice} VND
+    tr
+      td(strong='true' style="padding: 8px; background: #f9f9f9; color: #333;") Ngày khởi hành:
+      td(style="padding: 8px;") #{startDate}
+
+  p(style="font-size: 16px; margin-top: 20px; color: #555;")
+    | Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi. Chúc bạn có một chuyến đi thật tuyệt vời!
+
+  p(style="margin-top: 30px; font-size: 14px; color: #aaa;")
+    | Đây là email tự động, vui lòng không phản hồi lại.

@@ -77,4 +77,7 @@ module.exports = class Email {
   async sendPartnerWelcome() {
     await this.send("partnerWelcome", "Tài khoản đối tác Fvivu đã được tạo!");
   }
+  async sendBookTourSuccess() {
+    await this.send("bookTourSuccess", "Thanh toán thành công");
+  }
 };

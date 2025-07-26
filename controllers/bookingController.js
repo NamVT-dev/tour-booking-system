@@ -4,6 +4,7 @@ const User = require("../models/userModel");
 const Booking = require("../models/bookingModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const Email = require("../utils/email");
 
 exports.getCheckoutSession = catchAsync(async (req, res) => {
   const tour = await Tour.findById(req.body.tourId);
@@ -42,19 +43,33 @@ exports.getCheckoutSession = catchAsync(async (req, res) => {
 });
 
 const createBookingCheckout = async (session) => {
-  const tour = session.client_reference_id;
-  const user = (await User.findOne({ email: session.customer_email })).id;
+  const tour = await Tour.findById(session.client_reference_id);
+  const user = await User.findOne({ email: session.customer_email });
   const price = session.amount_total;
   const startDate = session.metadata.startDate;
   const numberOfPeople = session.metadata.numberOfPeople;
   await Booking.create({
-    tour,
-    user,
+    tour: tour.id,
+    user: user.id,
     price,
-    startDate,
+    startDate: startDate.split("T")[0],
     numberOfPeople,
     paid: true,
   });
+
+  const date = new Date(startDate);
+
+  const formattedDate = date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  await new Email(user, {
+    tourName: tour.name,
+    tourPrice: price,
+    startDate: formattedDate,
+  }).sendBookTourSuccess();
 };
 
 exports.webhookCheckout = (req, res) => {
