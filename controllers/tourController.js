@@ -324,7 +324,6 @@ exports.updateTourStatusByPartner = catchAsync(async (req, res, next) => {
 exports.getRemainingSlots = catchAsync(async (req, res, next) => {
   const tourId = req.params.id;
   const { startDate } = req.body;
-  console.log(startDate);
 
   const tour = await Tour.findById(tourId);
   if (!tour) return next(new AppError("Không tìm thấy tour", 404));
